@@ -1,0 +1,1 @@
+/home/frandi/dev/pump-probe-analysis/scripts/fconnectivity/preliminary_scripts/compare_fastslow_kernels_with_aesconn.py

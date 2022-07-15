@@ -1,0 +1,1 @@
+python funatlas_vs_correlations.py --to-paper

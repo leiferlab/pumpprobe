@@ -1,0 +1,3 @@
+python wt_vs_mutants.py --i:AVD --sort-avg --inclall-occ --vmax:0.75 --relative
+python wt_vs_mutants.py --i:AVE --sort-avg --inclall-occ --vmax:0.75 --relative
+python wt_vs_mutants.py --i:AWB --sort-avg --inclall-occ --vmax:0.75 --relative

@@ -1,0 +1,3 @@
+python off_target_xy.py --to-paper
+
+python off_target_z.py --to-paper

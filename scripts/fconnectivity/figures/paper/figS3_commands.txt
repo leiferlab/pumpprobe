@@ -1,0 +1,3 @@
+# For correlation optimization, on functional data and kunert simulation
+python funatlas_vs_correlations_optimize_correlation.py
+python kunert_vs_correlations_optimize_correlation_step2.py

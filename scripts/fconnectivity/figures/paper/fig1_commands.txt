@@ -1,0 +1,3 @@
+python scripts/fconnectivity/waterfall_plot.py folder --signal:green --hide-axes-spines --nan-th:0.5 --alphabetical-sort --only-labeled --to-paper
+python scripts/fconnectivity/figures/2Pspotcharacterization/plot_spot_sections.py --to-paper # This was already modified with better font size
+python scripts/fconnectivity/figures/gur-3/gur3_exc.py --to-paper

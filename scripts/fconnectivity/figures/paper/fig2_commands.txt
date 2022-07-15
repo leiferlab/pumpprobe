@@ -1,0 +1,7 @@
+python scripts/fconnectivity/funatlas_compile.py --use-kernels --normalize:max_abs --invert-title --no-stamp --ylabel:kernel --figsize:5,3 --no-legend --fmt:pdf --dst:/projects/LEIFER/francesco/funatlas/figures/paper/fig2/ --j:AVD --i:ASG --ylim:-0.3,1.1
+
+python scripts/fconnectivity/funatlas_compile.py --use-kernels --normalize:max_abs --invert-title --no-stamp --ylabel:kernel --figsize:5,3 --no-legend --fmt:pdf --dst:/projects/LEIFER/francesco/funatlas/figures/paper/fig2/ --j:AVJ --i:IL1V  --ylim:-1.1,1.1
+
+python funatlas_plot_intensity_map.py --no-merge-bilateral --req-auto-response --ds-exclude-tags:mutant --alpha-qvalues --alpha-max:0.8 --no-stamp --pop-nans --figsize:24,20 --to-paper
+
+python funatlas_plot_correlation_nice.py --to-paper
