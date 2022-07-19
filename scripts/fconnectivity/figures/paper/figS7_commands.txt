@@ -1,0 +1,4 @@
+python Varianility_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th-from-file --pop-nans
+
+python Comp_response_figure_2.py --all-pairs
+

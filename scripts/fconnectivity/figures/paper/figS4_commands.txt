@@ -1,0 +1,2 @@
+python plot_intensity_jusdF.py  --pop-nans --inclall-occ --req-auto-response --vmax:0.4 --no-stamp --cmap:Spectral_r --no-merge-bilateral
+

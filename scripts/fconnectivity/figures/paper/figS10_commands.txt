@@ -1,0 +1,1 @@
+python funatlas_plot_intensity_map.py --pop-nans --inclall-occ --req-auto-response --vmax:0.4 --alpha-max:1. --alpha-min:0.6 --no-stamp --cmap:Spectral_r --alpha-kolmogorov-smirnov --no-merge-bilateral --ds-exclude-tags:None --ds-tags:unc31
