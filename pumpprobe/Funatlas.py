@@ -435,7 +435,9 @@ class Funatlas:
         else: return out_ids[0]
         
     def ids_to_i(self,ids):
-        '''Converts IDs to atlas indices.
+        '''Old name of this function, see ids_to_ai. Maintained for 
+        back-compatibility. 
+        Converts IDs to atlas indices.
         
         Parameters
         ----------
@@ -476,6 +478,9 @@ class Funatlas:
             return atlas_i[0]
         else:
             return atlas_i
+        
+    def ids_to_ai(self,ids):
+        return self.def ids_to_i(self,ids):
             
     def i_to_ai(self,i,i_ds):
         '''Converts dataset-specific indices to atlas indices (ai).
