@@ -1,3 +1,1 @@
-python off_target_xy.py --to-paper
-
-python off_target_z.py --to-paper
+python scripts/plot_photobleaching_2d_frame_comparison.py --folder-1:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_144449/ --folder-2:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_142857/ --volumes-1:1,110 --volumes-2:1,70 --xlim:150,330 --ylim:145,310 --inset-limits-1:235,265,170,200 --inset-limits-2:220,250,200,230 --dz-from-logbook-um:8.5

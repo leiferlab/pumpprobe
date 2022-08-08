@@ -12,14 +12,15 @@ for s in sys.argv:
 
 print("Using the comp/real responses",compreal)
 
-pair_fake_resp_coeff = np.loadtxt("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelations"+fname_add+"_pair_"+compreal+"_resp_coeff.txt")
-all_fake_resp_corr = np.loadtxt("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelations"+fname_add+"_all_"+compreal+"_resp_corr.txt")
+#switching terminology to "computed" responses
+pair_comp_resp_coeff = np.loadtxt("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelations"+fname_add+"_pair_"+compreal+"_resp_coeff.txt")
+all_comp_resp_corr = np.loadtxt("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelations"+fname_add+"_all_"+compreal+"_resp_corr.txt")
 
 nbins = 30
 fig = plt.figure(1,figsize=(3,2))
 ax = fig.add_subplot(111)
-ax.hist(pair_fake_resp_coeff, bins = 30, alpha = 0.5, density = "True",label="same pair")
-ax.hist(all_fake_resp_corr, bins = 30, alpha = 0.5, density = "True",label="shuffled pairs")
+ax.hist(pair_comp_resp_coeff, bins = 30, alpha = 0.5, density = "True",label="same pair")
+ax.hist(all_comp_resp_corr, bins = 30, alpha = 0.5, density = "True",label="shuffled pairs")
 ax.set_xlabel("Correlation coefficient",fontsize=14)
 ax.set_ylabel("Distribution",fontsize=14)
 ax.legend(fontsize=10,loc=2)

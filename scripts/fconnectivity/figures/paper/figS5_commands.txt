@@ -1,5 +1,5 @@
-python Varianility_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th-from-file --pop-nans
+python scripts/Variability_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th-from-file --pop-nans
 
-python qvalues_map.py --req-auto-response --inclall-occ --no-stamp --pop-nans --no-merge-bilateral --matchless-nan-th-from-file
+python scripts/qvalues_map.py --req-auto-response --inclall-occ --no-stamp --pop-nans --no-merge-bilateral --matchless-nan-th-from-file
 
-python occ3_qval_histplots.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral
+python scripts/occ3_qval_histplots.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral

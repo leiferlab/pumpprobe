@@ -1,1 +1,12 @@
-python funatlas_vs_correlations.py --to-paper
+#These three scripts plot the combined results that are computed by the three scripts below
+python scripts/fconnectivity/figures/compare_connectomes/funatlas_vs_correlations_combined_bar_plot.py
+python scripts/fconnectivity/figures/compare_connectomes/funatlas_vs_correlations_combined_bar_plot_head_pharynx.py
+python scripts/fconnectivity/figures/compare_connectomes/dyson_steady_state_kunert_vs_q.py 
+
+#Scripts that produce the numbers to be used in the scripts above. Merging all the scripts into one would have produced a lot of confusion.
+python scripts/fconnectivity/figures/compare_connectomes/funatlas_vs_correlations.py --to-paper
+python scripts/fconnectivity/figures/compare_connectomes/kunert_vs_correlations_optimize_correlation_step2.py
+python scripts/fconnectivity/figures/compare_connectomes/funatlas_vs_correlations_optimize_correlation.py
+
+
+python scripts/fconnectivity/figures/compare_connectomes/compare_fastslow_kernels_with_aesconn.py --q-th:0.05 --drop-saturation-branches --leq-rise-time:0.05 --multi-conditions

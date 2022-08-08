@@ -1,0 +1,2 @@
+python scripts/fconnectivity/figures/compare_connectomes/fraction_that_is_fast_wt_unc31.py
+python scripts/fconnectivity/figures/compare_connectomes/qvalues_wt_unc31.py

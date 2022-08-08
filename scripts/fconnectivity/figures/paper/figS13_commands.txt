@@ -1,0 +1,9 @@
+python heat_raster_plot.py -j:M3L --i:MI --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response 
+python heat_raster_plot.py -j:M3L --i:I3 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response 
+python heat_raster_plot.py -j:M3L --i:I4 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response 
+python heat_raster_plot.py -j:M3L --i:M1 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response 
+
+python heat_raster_plot.py -j:M3L --i:MI --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response --unc31
+python heat_raster_plot.py -j:M3L --i:I3 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response --unc31
+python heat_raster_plot.py -j:M3L --i:I4 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response --unc31
+python heat_raster_plot.py -j:M3L --i:M1 --inclall-occ --sort-avg --relative --vmax:1 --headless  --paired --nomerge --req_auto_response --unc31
