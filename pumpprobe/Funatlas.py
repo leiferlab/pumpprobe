@@ -855,6 +855,56 @@ class Funatlas:
                 
         return occ3
         
+    def get_observation_matrix_nanthresh(self, req_auto_response=False):
+        occ3_nonan = np.zeros((self.n_neurons, self.n_neurons), dtype=int)
+        '''Returns a matrix that counts how many times the coupling between
+        two neurons could have been observed excluding traces that do not pass the nan threshold,
+         i.e. the times j was stimulated
+        and i was being observed. Useful to normalize occ1 from 
+        get_occurrence_matrix().'''
+        nan_th = 0.3
+
+        # Iterate over datasets
+        for i_ds in np.arange(len(self.ds_list)):
+            # Iterate over the stimulations
+            # Get the number of times the connection of this pair could
+            # actually be observed (number of times in which j was
+            # stimulated and i was observed).
+            obs_ais_original = self.atlas_i[i_ds]
+            neuron_list = np.arange(self.fconn[i_ds].n_neurons)
+
+            for ie in np.arange(len(self.stim_neurons_ai[i_ds])):
+                # Get the atlas-index of the stimulated neuron, and don't do
+                # anything if it wasn't identified.
+                aj = self.stim_neurons_ai[i_ds][ie]
+                i0 = self.fconn[i_ds].i0s[ie]
+                i1 = self.fconn[i_ds].i1s[ie]
+                nan_mask = self.sig[i_ds].get_segment_nan_mask(i0, i1)
+                nan_selection = np.sum(nan_mask, axis=0) <= nan_th * (i1 - i0)
+                
+                y = self.sig[i_ds].get_segment(i0,i1,baseline=False,normalize="none")
+                presel = np.ones(len(nan_selection),dtype=bool)
+                for i_ in np.arange(len(nan_selection)):
+                    pre = self.sig[i_ds].get_loc_std(y[:,i_],8)
+                    if pre==0.0:
+                        presel[i_] = False
+                
+                obis_ais_above_nanth = obs_ais_original[np.where(np.logical_and(nan_selection,presel))]
+                obs_ais = obis_ais_above_nanth[obis_ais_above_nanth >= 0]
+                obs_ais_u, obs_ais_u_n = np.unique(obs_ais, return_counts=True)
+
+
+                if aj < 0: continue
+
+                if req_auto_response and \
+                        self.fconn[i_ds].stim_neurons[ie] not in \
+                        self.fconn[i_ds].resp_neurons_by_stim[ie]:
+                    continue
+
+                occ3_nonan[obs_ais_u, aj] += obs_ais_u_n
+
+        return occ3_nonan
+        
     def get_times_j_stimulated(self,aj=None,jid=None,req_auto_response=True):
         if jid is not None:
             aj = self.ids_to_i(jid)
@@ -892,7 +942,7 @@ class Funatlas:
                             
         return njstim
         
-    def get_times_i_observed(self,ai=None,iid=None):
+    def get_times_i_observed(self,ai=None,iid=None,req_auto_response=False):
         if iid is not None:
             ai = self.ids_to_i(iid)
         elif ai is None and iid is None:
@@ -900,14 +950,22 @@ class Funatlas:
         
         niobs = 0
         for ds in np.arange(len(self.ds_list)):
-            niobs += len(np.where(self.atlas_i[ds]==ai)[0])
+            ok = not req_auto_response
+            if req_auto_response:
+                for ie in np.arange(len(self.fconn[ds].stim_neurons)):
+                    stim_j = self.fconn[ds].stim_neurons[ie]
+                    if stim_j in self.fconn[ds].resp_neurons_by_stim[ie]:
+                        ok = True
+            #if len(np.where(self.atlas_i[ds]==ai)[0])>0 and ok:
+            #    niobs +=1 
+            if ok: niobs += len(np.where(self.atlas_i[ds]==ai)[0])
         
         return niobs
         
-    def get_times_all_i_observed(self):
+    def get_times_all_i_observed(self,req_auto_response=False):
         niobs = np.zeros(self.n_neurons,dtype=int)
         for ai in np.arange(self.n_neurons):
-            niobs[ai] = self.get_times_i_observed(ai)
+            niobs[ai] = self.get_times_i_observed(ai,req_auto_response=req_auto_response)
             
         return niobs
         
@@ -2823,7 +2881,7 @@ class Funatlas:
                         
                         if drop_saturation_branches:
                             ec = ec.drop_saturation_branches()
-                        k_ = ec.eval(time)*stim_scale
+                        k_ = ec.eval(time)#*stim_scale
                         if np.any(np.isnan(k_)): continue
                         
                         k.append(k_)
@@ -3334,7 +3392,7 @@ class Funatlas:
             # connections and the new connections that you just found (any 
             # connection that has already been found corresponds to a connection
             # with less than the desired, exact n_hops).
-            c_prev_hops = c_prev_hops^c_new
+            c_prev_hops = c_prev_hops+c_new
             
         return c_new
         
@@ -3831,7 +3889,7 @@ class Funatlas:
                            "INS-17,DAF-2"
                            ]
                            
-        trans_exp_level = np.array([110634.0,110634.0,157972.0,])#1505.0])
+        trans_exp_level = np.array([110634.0,110634.0,157972.0,1505.0])
 
         # Build expression levels                   
         exp_levels = np.zeros((len(fnames),self.n_neurons))

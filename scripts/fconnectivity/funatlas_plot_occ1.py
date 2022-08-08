@@ -5,11 +5,17 @@ ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
 if len(sys.argv)>1: 
     if not sys.argv[1] == "--head-only":
         ds_list = sys.argv[1] 
+        
+signal_kwargs = {"remove_spikes": True,  "smooth": True, 
+                 "smooth_mode": "sg_causal", 
+                 "smooth_n": 13, "smooth_poly": 1,
+                 "photobl_appl":True,            
+                 "matchless_nan_th_from_file": True}
 
-funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=True,
-                                 merge_dorsoventral=False,merge_AWC=True,
-                                 load_signal=False,
-                                 ds_tags=None,ds_exclude_tags=None)
+funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=False,
+                                 merge_dorsoventral=False,merge_AWC=False,
+                                 signal="green",signal_kwargs=signal_kwargs,
+                                 ds_tags=None,ds_exclude_tags="mutant")
 
 i_check = 0
 
@@ -17,7 +23,9 @@ i_check = 0
 # Get response occurrence and observation matrices
 ##################################################
 occ1, occ2 = funa.get_occurrence_matrix(req_auto_response=True)
-occ3 = funa.get_observation_matrix(req_auto_response=True).astype(float)
+#occ3 = funa.get_observation_matrix(req_auto_response=True).astype(float)
+occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=True).astype(float)
+print(np.sum(np.any(funa.reduce_to_head(occ3),axis=1)), "n observed via occ3")
 sens1, sens2 = funa.get_occurrence_matrix(req_auto_response=True,stim_shift=1)
 ############
 # Run checks
@@ -53,7 +61,7 @@ sens1 = funa.reduce_to_head(sens1)
 ##########################################################################
 njstim = funa.get_times_all_j_stimulated(req_auto_response=True)
 njstim2 = funa.get_times_all_j_stimulated(req_auto_response=False)
-niobs = funa.get_times_all_i_observed()
+niobs = funa.get_times_all_i_observed(req_auto_response=True)
 # Get the argsort for the observation array
 obsheadargsort = np.argsort(niobs[funa.head_ai])[::-1]
 # Print which neurons are never stimulated or observed
@@ -145,7 +153,32 @@ ax.legend()
 plt.tight_layout()
 plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
             "neuron_hist_obs_stim.pdf", bbox_inches="tight")
-            
+
+fig = plt.figure(41,figsize=(16,9))
+ax = fig.add_subplot(111)
+x = np.arange(len(niobs[funa.head_ai]))
+bars = niobs[funa.head_ai][obsheadargsort]
+print(len(bars), "len bars")
+print(np.sum(bars>0), "bars>0")
+incons = np.logical_and(~np.any(occ3[funa.head_ai][:,funa.head_ai][obsheadargsort][:,obsheadargsort],axis=1),bars>0)
+print(np.sum(incons),"incons")
+print(funa.head_ids[obsheadargsort][incons])
+bars2 = njstim[funa.head_ai][obsheadargsort]
+bars3 = njstim2[funa.head_ai][obsheadargsort]
+labels = tick_label=funa.neuron_ids[funa.head_ai][obsheadargsort]
+ax.bar(x,bars,alpha=0.5,label="observed in n datasets")
+ax.bar(x,bars2,alpha=0.5,label="stimulated n times")
+ax.axhline(1,c='k',alpha=0.3)
+ax.axhline(2,c='k',alpha=0.3)
+ax.set_xticks(x)
+ax.set_xticklabels(labels,rotation=90,fontsize=6)
+ax.set_yticks(np.append(ax.get_yticks(),[1,2]))
+ax.set_ylabel("n")
+ax.legend(fontsize=18)
+plt.tight_layout()
+plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
+            "neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
+
 fig = plt.figure(5,figsize=(9,9))
 ax = fig.add_subplot(111)
 # occ1 is the number of times i responds when j is stimulated (and autoresponds)

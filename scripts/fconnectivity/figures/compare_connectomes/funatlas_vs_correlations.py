@@ -29,10 +29,7 @@ ds_exclude_tags = "mutant" if not unc31 else None
 
 ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
 ds_list_spont = "/projects/LEIFER/francesco/funatlas_list_spont.txt"
-''' OLD FOLDERS
-no_stim_folders = ["/projects/LEIFER/Sophie/NewRecordings/20220214/pumpprobe_20220214_171348/",
-                  "/projects/LEIFER/Sophie/NewRecordings/20220215/pumpprobe_20220215_112405/",
-                  "/projects/LEIFER/Sophie/NewRecordings/20220216/pumpprobe_20220216_161637/"]'''
+
                   
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
@@ -44,7 +41,7 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True,
 # Load Funatlas for actual data
 funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=True,signal="green",
                                  signal_kwargs = signal_kwargs,
-                                 enforce_stim_crosscheck=True,
+                                 enforce_stim_crosscheck=False,
                                  ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags,
                                  verbose=False)
                                  
@@ -88,6 +85,7 @@ print("\n\nRESIMMETRIZING CK\n\n")
 nanmask = np.isnan(ck)*np.isnan(ck.T)
 ck = 0.5*(np.nansum([ck,ck.T],axis=0))
 ck[nanmask] = np.nan
+ck_orig = np.copy(funa.reduce_to_head(ck))
 #ck = funa.get_correlation_from_kernels_full_trace(inclall_occ2,occ3,q)
 
 # Get the signal correlation
@@ -100,6 +98,7 @@ funa_spont = pp.Funatlas.from_datasets(ds_list_spont, merge_bilateral=True,
                                          signal_kwargs = signal_kwargs)
 # Get the spontaneous activity correlation
 spontcorr = funa_spont.get_signal_correlations()
+spontcorr_orig = np.copy(funa.reduce_to_head(spontcorr))
 
 # Make anatomical connectome from Funatlas
 conn = funa.aconn_chem + funa.aconn_gap
@@ -109,6 +108,7 @@ connsym = funa.corr_from_eff_causal_conn(conn)
 acfolder = "/projects/LEIFER/francesco/simulations/activity_connectome_sign2/"
 actconn = np.loadtxt(acfolder+"activity_connectome_bilateral_merged.txt")
 actconncorr = np.loadtxt(acfolder+"activity_connectome_bilateral_merged_correlation.txt")
+actconncorr_orig = np.copy(funa.reduce_to_head(actconncorr))
 actconn_ph = funa.reduce_to_pharynx(actconn)
 
 print("\n\nRESIMMETRIZING actconncorr\n\n")
@@ -222,23 +222,23 @@ bars = [r_spontcorr_ck,
         r_spontcorr_actconncorr,
         r_spontcorr_conn,
         ]
-y = np.arange(len(bars))[::-1]/2
-ax.barh(y,bars,height=0.4,align="center")
+x = np.arange(len(bars))[::-1]/2
+ax.bar(x,bars,width=0.4,align="center")
 ax.set_xlim(0,0.5)
-ax.set_xlabel("Correlation coefficient")
+'''ax.set_ylabel("Correlation coefficient")
 ax.set_yticks(y)
 ax.set_yticklabels(["FunConn-derived\nactivity correlations",
                     "Anatomy-derived\nactivity correlations",
                     "Anatomical weight\n(synaptic count)",
                     ],
-                    rotation=0,va="center")
+                    rotation=0,va="center")'''
 ax.spines.right.set_visible(False)
 ax.spines.top.set_visible(False)
 fig1.tight_layout()
 if not unc31:
-    fig1.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations3.png",dpi=300,bbox_inches="tight")
+    fig1.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations3_nth.png",dpi=300,bbox_inches="tight")
     if to_paper:
-        fig1.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlations.pdf",bbox_inches="tight")
+        fig1.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlations_nth.pdf",bbox_inches="tight")
     
 fig1b = plt.figure(11)
 ax = fig1b.add_subplot(111)
@@ -258,9 +258,9 @@ ax.spines.right.set_visible(False)
 ax.spines.top.set_visible(False)
 fig1b.tight_layout()
 if not unc31:
-    fig1b.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations3b.png",dpi=300,bbox_inches="tight")
+    fig1b.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations3b_nth.png",dpi=300,bbox_inches="tight")
     if to_paper:
-        fig1b.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlationsb.pdf",bbox_inches="tight")
+        fig1b.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlationsb_nth.pdf",bbox_inches="tight")
     
 fig2 = plt.figure(2)
 ax2 = fig2.add_subplot(111)
@@ -290,15 +290,15 @@ ax3 = fig3.add_subplot(111)
 excl = np.isnan(q)+np.isnan(actconn)#+ondiag
 cm = np.array(["C0","C0"])#np.array(["y","C0"])
 escon_ = 1*escon
-ax3.scatter(actconn[~excl],q[~excl],c=cm[escon_[~excl]],alpha=0.3)
-ax3.set_xlabel("anatomy-derived effective weight")
+ax3.scatter(np.abs(actconn[~excl]),q[~excl],c=cm[escon_[~excl]],alpha=0.3)
+ax3.set_xlabel("anatomy-derived effective weight (abs.value) $|\Delta V_{i,j}|$  (V)")
 ax3.set_ylabel("q")
 ax3.invert_yaxis()
 fig3.tight_layout()
 if not unc31:
     fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations3_r_q_actconn.png",dpi=300,bbox_inches="tight")
     if to_paper:
-        #fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlations_r_q_actconn.pdf",bbox_inches="tight")
+        fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_correlations_r_q_actconn.pdf",bbox_inches="tight")
         pass
     
 fig3b = plt.figure(13)
@@ -306,8 +306,8 @@ ax3b = fig3b.add_subplot(111)
 excl = np.isnan(q)+np.isnan(actconn)+ondiag
 cm = np.array(["C0","C0"])#np.array(["y","C0"])
 escon_ = 1*escon
-ax3b.scatter(actconn[~excl],q[~excl],c=cm[escon_[~excl]],alpha=0.3)
-ax3b.set_xlabel("anatomy-derived effective weight")
+ax3b.scatter(np.abs(actconn[~excl]),q[~excl],c=cm[escon_[~excl]],alpha=0.3)
+ax3b.set_xlabel("anatomy-derived effective weight (abs.value) $|\Delta V_{i,j}|$ (V)")
 ax3b.set_ylabel("q")
 ax3b.invert_yaxis()
 fig3b.tight_layout()
@@ -388,12 +388,16 @@ ax7.set_xlabel(r"|$\langle$spontaneous correlation$\rangle_{ds}$|")
 ax7.set_ylabel("bare correlation in datasets")
 fig7.tight_layout()
 
+###
+# Plot the correlation matrices
+###
+
 fig8 = plt.figure(8)
 ax8 = fig8.add_subplot(111)
 ax8.set_facecolor((0.4,0.4,0.4))
-im8,sorter_i,sorter_j,lim = funa.sort_matrix_pop_nans(spontcorr,return_all=True)
-np.fill_diagonal(im8,np.nan)
-ax8.imshow(im8)
+_,sorter_i,sorter_j,lim = funa.sort_matrix_pop_nans(spontcorr_orig,return_all=True)
+np.fill_diagonal(spontcorr_orig,np.nan)
+ax8.imshow(spontcorr_orig[sorter_i][:,sorter_j])
 ax8.set_xticks([])
 ax8.set_yticks([])
 fig8.tight_layout()
@@ -404,9 +408,8 @@ if to_paper:
 fig9 = plt.figure(9)
 ax9 = fig9.add_subplot(111)
 ax9.set_facecolor((0.4,0.4,0.4))
-ck_ = np.copy(ck)
-np.fill_diagonal(ck_,np.nan)
-ax9.imshow(ck_[sorter_i][:,sorter_j],vmax=0.02)
+np.fill_diagonal(ck_orig,np.nan)
+ax9.imshow(ck_orig[sorter_i][:,sorter_j],vmax=0.02)
 ax9.set_xticks([])
 ax9.set_yticks([])
 fig9.tight_layout()
@@ -417,14 +420,56 @@ if to_paper and not unc31:
 fig10 = plt.figure(10)
 ax10 = fig10.add_subplot(111)
 ax10.set_facecolor((0.4,0.4,0.4))
-np.fill_diagonal(actconncorr,np.nan)
-ax10.imshow(actconncorr[sorter_i][:,sorter_j])
+np.fill_diagonal(actconncorr_orig,np.nan)
+ax10.imshow(actconncorr_orig[sorter_i][:,sorter_j])
 ax10.set_xticks([])
 ax10.set_yticks([])
 fig10.tight_layout()
 if to_paper and not unc31:
     fig10.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kunert.pdf",dpi=300,bbox_inches="tight")
     fig10.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kunert.png",dpi=300,bbox_inches="tight")
+
+##    
+#Sort the correlation matrices
+##
+
+sorter2 = np.argnansort(np.nansum(np.arange(spontcorr_orig[sorter_i][:,sorter_j].shape[0])[:,None]*spontcorr_orig[sorter_i][:,sorter_j],axis=0))[::-1]
+fig40 = plt.figure(40)
+ax = fig40.add_subplot(111)
+ax.set_facecolor((0.4,0.4,0.4))
+ax.imshow(spontcorr_orig[sorter_i][:,sorter_j][sorter2][:,sorter2])
+ax.set_xticks([])
+ax.set_yticks([])
+fig40.tight_layout()
+if to_paper and not unc31:
+    fig40.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_spont_sorted.pdf",dpi=300,bbox_inches="tight")
+    fig40.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_spont_sorted.png",dpi=300,bbox_inches="tight")
+
+fig41 = plt.figure(41)
+ax = fig41.add_subplot(111)
+ax.set_facecolor((0.4,0.4,0.4))
+ax.imshow(ck_orig[sorter_i][:,sorter_j][sorter2][:,sorter2])
+ax.set_xticks([])
+ax.set_yticks([])
+fig41.tight_layout()
+if to_paper and not unc31:
+    fig41.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kernels_sorted.pdf",dpi=300,bbox_inches="tight")
+    fig41.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kernels_sorted.png",dpi=300,bbox_inches="tight")
+
+fig42 = plt.figure(42)
+ax = fig42.add_subplot(111)
+ax.set_facecolor((0.4,0.4,0.4))
+ax.imshow(actconncorr_orig[sorter_i][:,sorter_j][sorter2][:,sorter2])
+ax.set_xticks([])
+ax.set_yticks([])
+fig42.tight_layout()
+if to_paper and not unc31:
+    fig42.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kunert_sorted.pdf",dpi=300,bbox_inches="tight")
+    fig42.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/corr_kunert_sorted.png",dpi=300,bbox_inches="tight")
+
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/sorter_i.txt",sorter_i,fmt="%d")
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/sorter_j.txt",sorter_j,fmt="%d")
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/sorter_2.txt",sorter2,fmt="%d")
 
 plt.show()
 
