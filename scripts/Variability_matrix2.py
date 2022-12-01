@@ -17,22 +17,30 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 nan_th = 0.3
 save = "--no-save" not in sys.argv
 two_min_occ = "--two-min-occ" in sys.argv
 figsize = (12,10)
-
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
 
+for s in sys.argv:
+    sa = s.split(":")
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
+
 # Prepare kwargs for signal preprocessing (to be passed to Funatlas, so that
 # it can internally apply the preprocessing to the Signal objects).
-signal_kwargs = {"remove_spikes": True,  "smooth": True,
-                 "smooth_mode": smooth_mode,
-                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file, "photobl_appl":True}
+signal_kwargs = {"remove_spikes": True,  "smooth": True, 
+                 "smooth_mode": smooth_mode, 
+                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,          
+                 "photobl_appl":True,
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa = pp.Funatlas.from_datasets(
                 ds_list,
@@ -186,11 +194,11 @@ ax2.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True
 ax2.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
 ax2.set_xlim(-0.5, lim)
 if merge_bilateral:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/fraction_responding_merged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/fraction_responding_merged.pdf")
 else:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/fraction_responding_unmerged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_unmerged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/fraction_responding_unmerged.pdf")
 fig2.clf()
 
 if SIM:
@@ -222,11 +230,11 @@ ax3.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True
 ax3.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
 ax3.set_xlim(-0.5, lim)
 if merge_bilateral:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/occ3_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/occ3_merged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/occ3_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/occ3_merged.pdf")
 else:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/occ3_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/occ3_unmerged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/occ3_unmerged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/occ3_unmerged.pdf")
 fig3.clf()
 
 variability_matrix_head = variability_matrix_head[sorter_i][:,sorter_j]
@@ -258,11 +266,11 @@ ax.set_xlim(-0.5, lim)
 
 if stamp: pp.provstamp(ax,-.1,-.1," ".join(sys.argv))
 if merge_bilateral:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/variability_merged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/variability_merged.pdf")
 else:
-    plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/variability_unmerged.pdf")
+    #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_unmerged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/variability_unmerged.pdf")
 fig1.clf()
 
 

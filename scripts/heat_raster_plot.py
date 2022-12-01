@@ -12,24 +12,34 @@ nomerge  = "--nomerge" in sys.argv
 paired = "--paired" in sys.argv
 unc31 = "--unc31" in sys.argv
 req_auto_response = "--req_auto_response" in sys.argv
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 iid = "" #Downstream neuron
 jid = "" #Stimulated neuron
 vmax = 0.5
-matchless_nan_th = 1.
+dst = None
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] in ["-i","--i"] : iid=sa[1] #Downstream neuron
     if sa[0] in ["-j","--j"] : jid=sa[1] #Stimulated neuron
     if sa[0] == "--vmax": vmax=float(sa[1])
     if sa[0] == "--matchless-nan-th": matchless_nan_th=float(sa[1])
+    if sa[0] == "--dst": dst=sa[1]
+
+if dst is None: 
+    print("Specify --dst directory.")    
+    quit()
+if dst[-1]!="/":dst+="/"
 
 ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
 
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
                  "smooth_n": 13, "smooth_poly": 1,
-                 "matchless_nan_th": matchless_nan_th}
-                 #"matchless_nan_th_from_file": True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 
 merge_bilateral = not(nomerge)
@@ -230,7 +240,7 @@ stamp = " ".join(map(shlex.quote, sys.argv[0:]))
 
 from pathlib import Path
 script_dir=Path(__file__).parent #Get path to this script
-fig.savefig( (script_dir /  (jid+'_'+iid+'_'+unc31_flag+'_heat_raster.pdf')),bbox_inches="tight",metadata=pp.provenance.pdf_metadata(stamp))
-fig.savefig(  (script_dir /  (jid+'_'+iid+'_'+unc31_flag+'_heat_raster.png')),metadata=pp.provenance.png_metadata(stamp), bbox_inches="tight",dpi=300)
+fig.savefig(dst+jid+'_'+iid+'_'+unc31_flag+'_heat_raster.pdf',bbox_inches="tight")#,metadata=pp.provenance.pdf_metadata(stamp))
+fig.savefig(dst+jid+'_'+iid+'_'+unc31_flag+'_heat_raster.png', bbox_inches="tight",dpi=300)#metadata=pp.provenance.png_metadata(stamp)
 if not headless: plt.show()
 

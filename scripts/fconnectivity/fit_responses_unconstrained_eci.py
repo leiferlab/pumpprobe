@@ -14,6 +14,7 @@ save = "--no-save" not in sys.argv
 sig_green = "--signal:green" in sys.argv
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 for s in sys.argv[1:]:
     sa = s.split(":")
     if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
@@ -36,8 +37,10 @@ if not sig_green:
 else:
     tubatura.log("Using green signal.")
     sig = wormdm.signal.Signal.from_file(
-                folder,"green",matchless_nan_th=matchless_nan_th,
-                matchless_nan_th_from_file=matchless_nan_th_from_file)
+                folder,"green",
+                matchless_nan_th=matchless_nan_th,
+                matchless_nan_th_from_file=matchless_nan_th_from_file,
+                matchless_nan_th_added_only=matchless_nan_th_added_only)
     sig.appl_photobl()
 
 # Smooth and calculate the derivative of the signal (derivative needed for

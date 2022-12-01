@@ -1,0 +1,9 @@
+# Run first the scripts below to generate the results that are combined in a 
+# single bar plot in this script.
+python scripts/fconnectivity/figures/compare_connectomes/funatlas_vs_correlations_combined_bar_plot.py
+
+# Run these scripts to generate the results to be combined in the script above.
+# Merging everything in one script would have made it very complicated.
+python funatlas_vs_correlations2.py --matchless-nan-th:0.5 --matchless-nan-th-added-only --no-merge
+python funatlas_vs_correlations_optimize_correlation.py --matchless-nan-th:0.5 --matchless-nan-th-added-only --no-merge
+python kunert_vs_correlations_optimize_correlation_step2.py --no-merge --matchless-nan-th:0.5 --matchless-nan-th-added-only

@@ -89,7 +89,7 @@ do
     echo "processing $folder"
     #echo "just updating"
     echo ""
-    python ../scripts/fconnectivity/responses_detect.py $folder --signal:green -y --ampl-min-time:4 --ampl-thresh:1.3 --deriv-min-time:4 --deriv-thresh:0.02 --smooth-mode:sg_causal --smooth-n:13 --smooth-poly:1 --matchless-nan-th-from-file --matchless-nan-th:0.5
-    python ../scripts/fconnectivity/fit_responses_unconstrained_eci.py $folder --signal:green --matchless-nan-th-from-file --matchless-nan-th:0.5 
-    python ../scripts/fconnectivity/fit_responses_constrained_stim_eci.py $folder --signal:green --skip-if-not-manually-located --matchless-nan-th-from-file --matchless-nan-th:0.5
+    python ../scripts/fconnectivity/responses_detect.py $folder --signal:green -y --ampl-min-time:4 --ampl-thresh:1.3 --deriv-min-time:4 --deriv-thresh:0.02 --smooth-mode:sg_causal --smooth-n:13 --smooth-poly:1 --matchless-nan-th:0.5 --matchless-nan-th-added-only
+    python ../scripts/fconnectivity/fit_responses_unconstrained_eci.py $folder --signal:green --matchless-nan-th:0.5 --matchless-nan-th-added-only
+    python ../scripts/fconnectivity/fit_responses_constrained_stim_eci.py $folder --signal:green --skip-if-not-manually-located --matchless-nan-th:0.5 --matchless-nan-th-added-only
 done

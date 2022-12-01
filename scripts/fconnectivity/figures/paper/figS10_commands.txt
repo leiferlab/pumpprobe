@@ -1,3 +1,5 @@
-python funatlas_compile.py --i:AWB --j:URX --use-kernels --ylabel:Kernel --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS8/ --ds-exclude-tags:mutant --normalize:max_abs --figsize:4,3 --invert-title --fmt:pdf --no-stamp --no-legend --dpi:300 --xlim-upper:10 --ylim:-0.5,1.1
+python funatlas_compile.py --i:AVDL --j:ASHL --use-kernels --ylabel:Kernel --dst:<destination folder> --ds-exclude-tags:mutant --normalize:max_abs --figsize:4,3 --invert-title --fmt:pdf --no-stamp --no-legend --dpi:300 --xlim-upper:10 --ylim:-0.5,1.1 --matchless-nan-th:0.5 --matchless-nan-th-added-only --no-merge-bilateral
 
-python funatlas_plot_timescales_map2.py --cmap:viridis --alpha-kolmogorov-smirnov --alpha-min:0.6 --alpha-lbl:q --use-kernels --drop-saturation-branches
+python funatlas_plot_timescales_map2.py --cmap:viridis --alpha-kolmogorov-smirnov --alpha-min:0.6 --alpha-lbl:q --use-kernels --drop-saturation-branches --matchless-nan-th:0.5 --matchless-nan-th-added-only --no-stamp --no-merge-bilateral
+
+python scripts/heat_raster_plot.py -i:AVDL --j:ASHL --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:<destination folder>

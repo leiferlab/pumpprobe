@@ -1,9 +1,12 @@
-import numpy as np, matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt, sys
 import pumpprobe as pp
 from scipy.optimize import lsq_linear
 
 plt.rc('xtick',labelsize=5)
 plt.rc('ytick',labelsize=5)
+
+unc31 = "--unc31" in sys.argv
+add_s = "_unc31" if unc31 else ""
 
 funa = pp.Funatlas(merge_bilateral=False,merge_dorsoventral=False,merge_numbered=False,)
                                      
@@ -12,7 +15,9 @@ ids = funa.head_ids
 funa.load_aconnectome_from_file(chem_th=0,gap_th=0)
 conn = funa.reduce_to_head(funa.aconn_chem+funa.aconn_gap)
 medabsconn = np.median(np.abs(conn[conn!=0]))
-print(medabsconn)
+quantileconn = np.quantile(conn[conn!=0],0.99)
+print("medabsconn",medabsconn)
+print("quantileconn",quantileconn)
 
 #excl_ds = np.arange(42)
 excl_ds = [None]
@@ -22,10 +27,10 @@ f_ = np.zeros((n_excl_ds,n_head_neurons,n_head_neurons))
 F_ = np.zeros((n_excl_ds,n_head_neurons,n_head_neurons))
 for i_excl_ds in np.arange(n_excl_ds):
     if excl_ds[0] is not None:
-        txt_fname = "funatlas_intensity_map_excl_"+str(i_excl_ds)+".txt"
+        txt_fname = "funatlas_intensity_map_excl_"+str(i_excl_ds)+add_s+".txt"
     else:
-        txt_fname = "funatlas_intensity_map_cache.txt"
-        txt_fname_q = "funatlas_intensity_map_cache_q.txt"
+        txt_fname = "funatlas_intensity_map_cache"+add_s+".txt"
+        txt_fname_q = "funatlas_intensity_map_cache_q"+add_s+".txt"
     F = np.loadtxt("/projects/LEIFER/francesco/funatlas/"+txt_fname)
     F[np.isnan(F)] = 0.0
     q = np.loadtxt("/projects/LEIFER/francesco/funatlas/"+txt_fname_q)
@@ -34,8 +39,11 @@ for i_excl_ds in np.arange(n_excl_ds):
     
     # Normalizing 
     medabsF = np.median(np.abs(F[F!=0]))
-    print(medabsF)
-    F = F/medabsF*medabsconn
+    quantileF = np.quantile(F[F!=0],0.99)
+    print("medabsF",medabsF)
+    print("quantileF",quantileF)
+    #F = F/medabsF*medabsconn
+    #F = F/quantileF*quantileconn
     
     F_[i_excl_ds] = F
     f = np.zeros_like(F)
@@ -59,9 +67,13 @@ for i_excl_ds in np.arange(n_excl_ds):
         f[i] = res.x
         
         f_[i_excl_ds,i] = f[i]
+        
+    fig = plt.figure(101)
+    ax = fig.add_subplot(111)
+    ax.scatter(np.ravel(conn),np.ravel(f))
     
     if excl_ds[0] is None:
-        np.savetxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_inverted.txt",f[0])
+        np.savetxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_inverted"+add_s+".txt",f[0])
 
     r_conn_F = np.corrcoef([np.ravel(conn),np.ravel(F)])[0,1]
     r_conn_f = np.corrcoef([np.ravel(np.abs(conn)),np.ravel(np.abs(f))])[0,1]
@@ -136,7 +148,7 @@ if excl_ds[0] is None:
     for i in np.arange(len(funa.head_ai)):
         for j in np.arange(len(funa.head_ai)):
             f_body[funa.head_ai[i],funa.head_ai[j]] = f[i,j]
-    np.savetxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_inverted.txt",f_body)
+    np.savetxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_inverted"+add_s+".txt",f_body)
     plt.figure(6)
     plt.imshow(f_body)
     plt.show()
@@ -158,5 +170,5 @@ if excl_ds[0] is not None:
     ax3.plot(np.ravel(r_Fi_Fk),np.ravel(r_fi_fk),'o')
     ax3.set_xlabel("corr of F[i] and F[k]")
     ax3.set_ylabel("corr of f[i] and f[k]")
-    fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/F_to_f_inversion_steady_state.png",bbox_inches="tight")
+    fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/F_to_f_inversion_steady_state"+add_s+".png",bbox_inches="tight")
     plt.show()

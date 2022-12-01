@@ -12,7 +12,9 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 nan_th = 0.3
 save = "--no-save" not in sys.argv
 
@@ -26,6 +28,7 @@ figsize = (12, 10)
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] == "--nan-th": nan_th = float(sa[1])
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0] == "--ds-exclude-tags":
         ds_exclude_tags = sa[1]
         if ds_exclude_tags == "None": ds_exclude_tags = None
@@ -38,10 +41,13 @@ for s in sys.argv:
 
 # Prepare kwargs for signal preprocessing (to be passed to Funatlas, so that
 # it can internally apply the preprocessing to the Signal objects).
-signal_kwargs = {"remove_spikes": True, "smooth": True,
-                 "smooth_mode": smooth_mode,
-                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file, "photobl_appl":True}
+signal_kwargs = {"remove_spikes": True,  "smooth": True, 
+                 "smooth_mode": smooth_mode, 
+                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,                 
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only, 
+                 "photobl_appl":True}
 
 
 
@@ -122,11 +128,12 @@ ax.bar(labels, probs)
 plt.xticks(np.arange(0, 4, step=1), fontsize= 25)
 ax.set_xlabel('Min Anatomical Path Length',fontsize= 25)
 ax.set_ylabel('Probability of Functional Connection \n Given n Hops',fontsize= 25)
-plt.yticks(np.arange(0, 0.181, step=0.09), fontsize= 25)
+ax.set_yticks([0.0,0.06,0.12])
+ax.set_yticklabels(["0.0","0.06","0.12"],fontsize=25)
+ax.set_ylim(0,0.18)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth2.pdf", bbox_inches='tight')
-fig1.clf()
 
 iids = jids = funa.neuron_ids
 
@@ -220,13 +227,14 @@ min_anatomical_hops_all_flat = min_anatomical_hops_all_head.flatten("C")
 
 meanhops_sig = np.mean(min_anatomical_hops_flat[~np.isnan(min_anatomical_hops_flat)])
 meanhops_all = np.mean(min_anatomical_hops_all_flat[~np.isnan(min_anatomical_hops_all_flat)])
+print("\n\nmeanhops_sig\n\n",meanhops_sig)
 
 fig5 = plt.figure(figsize=(4, 5))
 ax = plt.gca()
 n_sig, bins, patches = ax.hist(min_anatomical_hops_flat, bins = [0.5,1.5,2.5,3.5,4.5], density=True, label='q < 0.05 connections', rwidth = 1, alpha = 1)
 #n_all, bins, patches = ax.hist(min_anatomical_hops_all_flat, bins = [0.5,1.5,2.5,3.5,4.5], density=True, label='All Possible Pairs', rwidth = 0.7, alpha = 0.5)
 #n_sig, bins, patches = ax.hist(min_anatomical_hops_flat, bins = [0.5,1.5,2.5,3.5,4.5], density=True, histtype='step', label='Pairs with q < 0.05', linewidth = 5)
-n_all, bins, patches = ax.hist(min_anatomical_hops_all_flat, bins = [0.5,1.5,2.5,3.5,4.5], density=True, histtype='step', label='all possible pairs', linewidth = 5)
+n_all, bins, patches = ax.hist(min_anatomical_hops_all_flat, bins = [0.5,1.5,2.5,3.5,4.5], density=True, histtype='step', label='all possible pairs', linewidth = 5, color="k")
 plt.xticks(np.arange(1, 5, step=1), fontsize= 25)
 ax.set_xlabel('Min Anatomical Path Length',fontsize= 25)
 ax.set_ylabel('Density of Pairs',fontsize= 25)
@@ -236,6 +244,8 @@ ax.spines['top'].set_visible(False)
 labels = ['q < 0.05 connections','all possible pairs']
 plt.legend(labels, fontsize = 15)
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth.pdf", bbox_inches='tight')
-fig5.clf()
+
+plt.show()
+
 print("done")
 

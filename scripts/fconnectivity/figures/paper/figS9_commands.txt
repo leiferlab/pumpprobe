@@ -1,5 +1,5 @@
-python scripts/Variability_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th-from-file --pop-nans
+python scripts/Variability_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --pop-nans --matchless-nan-th:0.5 --matchless-nan-th-added-only
 
-python scripts/Comp_response_figure_2.py --all-pairs
+python scripts/Comp_response_figure_2.py --all-pairs --matchless-nan-th:0.5 --matchless-nan-th-added-only
 
 python funatlas_plot_correlation_nice.py --to-paper

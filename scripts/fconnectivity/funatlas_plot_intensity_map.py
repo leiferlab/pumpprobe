@@ -16,16 +16,22 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 nan_th = 0.3
+correct_decaying = "--correct-decaying" in sys.argv
+if not correct_decaying: print("NOT USING THE NEW CORRECTION OF DECAYING RESPONSES")
 save = "--no-save" not in sys.argv
 save_cache = "--save-cache" in sys.argv
+export_to_txt = "--export-to-txt" in sys.argv
 vmax = 0.4
 cmap = "coolwarm"
 two_min_occ = "--two-min-occ" in sys.argv
+no_alpha = "--no-alpha" in sys.argv
 alpha_qvalues = "--alpha-qvalues" in sys.argv
 alpha_kolmogorov_smirnov = "--alpha-kolmogorov-smirnov" in sys.argv
-alpha_occ1 = not alpha_qvalues and not alpha_kolmogorov_smirnov
+alpha_occ1 = not alpha_qvalues and not alpha_kolmogorov_smirnov and not no_alpha
 alphamax_set = None
 alphamin_set = None
 alphalbl_set = None
@@ -34,10 +40,12 @@ merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
 to_paper = "--to-paper" in sys.argv
 plot = "--no-plot" not in sys.argv
+dst = None
 figsize = (12,10)
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] == "--nan-th": nan_th = float(sa[1])
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0] == "--ds-exclude-tags": 
         ds_exclude_tags=sa[1]
         if ds_exclude_tags == "None": ds_exclude_tags=None
@@ -52,6 +60,7 @@ for s in sys.argv:
     if sa[0] == "--alpha-min": alphamin_set = float(sa[1])
     if sa[0] == "--alpha-lbl": alphalbl_set = sa[1]
     if sa[0] == "--figsize": figsize = [int(sb) for sb in sa[1].split(",")]
+    if sa[0] == "--dst": dst = sa[1]
 
 # To determine which control distribution to use
 strain = "unc31" if ds_tags == "unc31" else ""
@@ -62,7 +71,9 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True,
                  "smooth_mode": smooth_mode, 
                  "smooth_n": smooth_n, "smooth_poly": smooth_poly,          
                  "photobl_appl":True,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa = pp.Funatlas.from_datasets(
                 ds_list,
@@ -74,7 +85,13 @@ funa = pp.Funatlas.from_datasets(
                 enforce_stim_crosscheck=enforce_stim_crosscheck,
                 verbose=False)
 
-#funa.export_to_txt("/projects/LEIFER/francesco/funatlas/exported_data/")
+print(len(funa.ds_list))
+
+if export_to_txt:
+    if ds_tags=="unc31":
+        funa.export_to_txt("/projects/LEIFER/francesco/funatlas/exported_data_unc31/")
+    elif ds_tags is None and ds_exclude_tags=="mutant":
+        funa.export_to_txt("/projects/LEIFER/francesco/funatlas/exported_data/")
 
 occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=req_auto_response)
 # If occ2 needs to be filtered
@@ -110,7 +127,10 @@ elif alpha_qvalues:
     alphas = np.clip((alphas-alphamin)/(alphamax-alphamin),0,1)
 elif alpha_kolmogorov_smirnov:
     if inclall_occ: inclall_occ2 = occ2
-    qvalues = funa.get_kolmogorov_smirnov_q(inclall_occ2,strain=strain)
+    tost_th = 1.2
+    qvalues, tost_q = funa.get_kolmogorov_smirnov_q(
+                            inclall_occ2,strain=strain,
+                            return_tost=True,tost_th=tost_th)
     qvalues_orig = np.copy(qvalues)
     print("Got qvalues")
     qvalues[np.isnan(qvalues)] = 1.
@@ -125,6 +145,8 @@ elif alpha_kolmogorov_smirnov:
     if alphamax_set is not None: alphamax = alphamax_set
     if alphamin_set is not None: alphamin = alphamin_set
     alphas = np.clip((alphas-alphamin)/(alphamax-alphamin),0,1)
+elif no_alpha:
+    alphas = np.ones(occ1.shape,dtype=float)
 
 mappa = np.zeros((funa.n_neurons,funa.n_neurons))*np.nan
 count = np.zeros((funa.n_neurons,funa.n_neurons))
@@ -140,6 +162,7 @@ for ai in np.arange(funa.n_neurons):
         ys = []
         times = []
         confidences = []
+
         for occ in occ2[ai,aj]:
             ds = occ["ds"]
             if ds in ds_exclude_i: continue
@@ -150,6 +173,7 @@ for ai in np.arange(funa.n_neurons):
             i0 = funa.fconn[ds].i0s[ie]
             i1 = funa.fconn[ds].i1s[ie]
             shift_vol = funa.fconn[ds].shift_vol
+            Dt = funa.fconn[ds].Dt            
             
             y = funa.sig[ds].get_segment(i0,i1,baseline=False,
                                          normalize="none")[:,i]
@@ -157,11 +181,20 @@ for ai in np.arange(funa.n_neurons):
                                          
             if np.sum(nan_mask)>nan_th*len(y): continue
                                          
-            if signal_range is None:    
+            if signal_range is None:
                 pre = np.average(y[:shift_vol])                                 
                 if pre == 0: continue
-                dy = np.average( y[shift_vol:] - pre )/pre
+                
+                if correct_decaying:
+                    _,_,_,_,_,df_s_unnorm = funa.get_significance_features(
+                                funa.sig[ds],i,i0,i1,shift_vol,
+                                Dt,nan_th,return_traces=True)
+                    if df_s_unnorm is None: continue
+                    dy = np.average(df_s_unnorm)/pre
+                else:
+                    dy = np.average( y[shift_vol:] - pre )/pre
             else:
+                print("Not using corrected y")
                 #std = np.std(y[:shift_vol-signal_range[0]])
                 pre = np.average(y[:shift_vol])                                 
                 #dy = np.average(y[shift_vol-signal_range[0]:shift_vol+signal_range[1]+1] - pre)
@@ -198,81 +231,43 @@ else:
 
 if plot:    
     fig1 = plt.figure(1,figsize=figsize)
-    gs = fig1.add_gridspec(1,10)
-    ax = fig1.add_subplot(gs[0,:9])
-    cax = fig1.add_subplot(gs[0,9:])
+    if no_alpha:
+        ax = fig1.add_subplot(111)
+    else:
+        gs = fig1.add_gridspec(1,10)
+        ax = fig1.add_subplot(gs[0,:9])
+        cax = fig1.add_subplot(gs[0,9:])
     #ax.fill_between(np.arange(mappa.shape[1]), 0, y2=mappa.shape[0], hatch='//////', zorder=0, fc='white')
     ax.imshow(0.*np.ones_like(mappa),cmap="Greys",vmax=1,vmin=0)
     blank_mappa = np.copy(mappa)
     blank_mappa[~np.isnan(mappa)] = 0.1
     ax.imshow(blank_mappa,cmap="Greys",vmin=0,vmax=1)
     im = ax.imshow(mappa,cmap=cmap,vmin=-vmax,vmax=vmax,alpha=alphas,interpolation="nearest")
-    pp.make_alphacolorbar(cax,-vmax,vmax,0.1,alphamin,alphamax,2,cmap=cmap,around=1,lbl_lg=True)
-    cax.set_xlabel(alphalbl,fontsize=15)
-    cax.set_ylabel(r'$\langle\Delta F/F\rangle_t$',fontsize=15)
-    cax.tick_params(labelsize=15)
+    diagonal = np.diag(np.diag(np.ones_like(mappa)))
+    new_diagonal = np.zeros_like(mappa)
+    new_diagonal[np.where(diagonal == 1)] = 1
+    ax.imshow(new_diagonal, cmap="binary", vmin=0, vmax=1, alpha=new_diagonal, interpolation="nearest")
+    if no_alpha:
+        plt.colorbar(im, label = r'$\langle\Delta F/F\rangle_t$')
+    else:
+        pp.make_alphacolorbar(cax,-vmax,vmax,0.1,alphamin,alphamax,2,cmap=cmap,around=1,lbl_lg=True)
+        cax.set_xlabel(alphalbl,fontsize=15)
+        cax.set_ylabel(r'$\langle\Delta F/F\rangle_t$',fontsize=15)
+        cax.tick_params(labelsize=15)
     ax.set_xlabel("stimulated",fontsize=30)
     ax.set_ylabel("responding",fontsize=30)
     ax.set_xticks(np.arange(len(sorter_j)))
     ax.set_yticks(np.arange(len(sorter_i)))
     if SIM:
-        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=5,rotation=90)
-        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=5)
+        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=6,rotation=90)
+        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=6)
     else:
-        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=5,rotation=90)
-        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=5)
+        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=6,rotation=90)
+        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=6)
     ax.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True)
     ax.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
-    ax.set_xlim(-0.5,lim)
+    ax.set_xlim(-0.5,lim+0.5)
     if stamp: pp.provstamp(ax,-.1,-.1," ".join(sys.argv))
-
-
-################################
-# COMPARE TO ACTIVITY CONNECTOME
-################################
-skip_act_conn = True
-if not sort and not pop_nans and not skip_act_conn:
-    act_conn = np.loadtxt("/projects/LEIFER/francesco/simulations/activity_connectome/activity_connectome_bilateral_merged.txt")
-    print(act_conn.shape)
-    act_conn = funa.reduce_to_head(act_conn)
-    dFF = mappa[~(np.isnan(mappa)^np.isinf(mappa))]
-    dFF_a = mappa[~(np.isnan(mappa)^np.isinf(mappa))]*alphas[~(np.isnan(mappa)^np.isinf(mappa))]
-    act_conn_x = act_conn[~(np.isnan(mappa)^np.isinf(mappa))]
-    def fitf(x,a):
-        return a*x
-        
-    p1,_ = curve_fit(fitf,act_conn_x,dFF,p0=[1])
-    x1 = np.linspace(np.min(act_conn_x),np.max(act_conn_x),10)
-    line1 = fitf(x1,p1)
-    p2,_ = curve_fit(fitf,act_conn_x,dFF_a,p0=[1])
-    line2 = fitf(x1,p2)
-
-    var1 = np.sum((dFF-np.average(dFF))**2)
-    r2_1 = 1-np.sum( (dFF-fitf(act_conn_x,p1))**2 )/var1
-    var2 = np.sum((dFF_a-np.average(dFF_a))**2)
-    r2_2 = 1-np.sum( (dFF_a-fitf(act_conn_x,p2))**2 )/var2
-    print(r2_1,r2_2)
-    
-    fig2 = plt.figure(2)
-    ax=fig2.add_subplot(111)
-    ax.plot(np.ravel(act_conn_x),np.ravel(dFF),'o')
-    ax.plot(x1,line1)
-    ax.set_xlabel("activity connectome")
-    ax.set_ylabel("average dF/F")
-    ax.set_title("R^2 = 1 - e^2/sigma^2 = "+str(np.around(r2_1,3)))
-    ax.set_ylim(-0.6,1.7)
-    fig2.tight_layout()
-    fig2.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/dFF_vs_act_conn.png",dpi=300,bbox_inches="tight")
-    
-    fig3 = plt.figure(3)
-    ax=fig3.add_subplot(111)
-    ax.plot(np.ravel(act_conn_x),np.ravel(dFF_a),'o')
-    ax.plot(x1,line2)
-    ax.set_xlabel("activity connectome")
-    ax.set_ylabel("average dF/F * (1-q)")
-    ax.set_title("R^2 = 1 - e^2/sigma^2 = "+str(np.around(r2_2,3)))
-    fig3.tight_layout()
-    fig3.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/dFF_1-q_vs_act_conn.png",dpi=300,bbox_inches="tight")
 
 if plot: plt.tight_layout()
 folder='/projects/LEIFER/francesco/funatlas/'
@@ -288,6 +283,16 @@ if save:
     np.savetxt(folder+txt_fname,mappa_full)
     if to_paper and plot:
         plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/funatlas_intensity_map.pdf", dpi=600, bbox_inches="tight")
+if dst is not None:
+    print(dst[-4:])
+    if dst[-4:] not in [".pdf",".png"]:
+        plt.savefig(dst+"funatlas_intensity_map.pdf", dpi=600, bbox_inches="tight")
+        f = open(dst+"funatlas_intensity_map_command_used.txt","w")
+    else:
+        plt.savefig(dst, dpi=600, bbox_inches="tight")
+        f = open(dst+"command_used.txt","w")
+    f.write(" ".join(sys.argv))
+    f.close()
 if save_cache:
     if ds_tags=="unc31":
         add_file_name = "_unc31"
@@ -297,5 +302,6 @@ if save_cache:
     np.savetxt(folder+txt_fname.split(".")[0]+"_cache_occ3"+add_file_name+".txt",occ3_full)
     if alpha_kolmogorov_smirnov:
         np.savetxt(folder+txt_fname.split(".")[0]+"_cache_q"+add_file_name+".txt",qvalues_orig)
+        np.savetxt(folder+txt_fname.split(".")[0]+"_cache_tost_q"+add_file_name+".txt",tost_q,header="#tost_th: "+str(tost_th))
 
 plt.show()

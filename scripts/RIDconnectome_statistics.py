@@ -16,7 +16,9 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 nan_th = 0.3
 save = "--no-save" not in sys.argv
 
@@ -30,6 +32,7 @@ figsize = (12, 10)
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] == "--nan-th": nan_th = float(sa[1])
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0] == "--ds-exclude-tags":
         ds_exclude_tags = sa[1]
         if ds_exclude_tags == "None": ds_exclude_tags = None
@@ -42,12 +45,13 @@ for s in sys.argv:
 
 # Prepare kwargs for signal preprocessing (to be passed to Funatlas, so that
 # it can internally apply the preprocessing to the Signal objects).
-signal_kwargs = {"remove_spikes": True, "smooth": True,
-                 "smooth_mode": smooth_mode,
-                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file, "photobl_appl":True}
-                 
-                 
+'''signal_kwargs = {"remove_spikes": True,  "smooth": True, 
+                 "smooth_mode": smooth_mode, 
+                 "smooth_n": smooth_n, "smooth_poly": smooth_poly,          
+                 "photobl_appl":True,
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}                 
 funa = pp.Funatlas.from_datasets(
     ds_list,
     merge_bilateral=merge_bilateral,
@@ -57,12 +61,14 @@ funa = pp.Funatlas.from_datasets(
     ds_tags=ds_tags, ds_exclude_tags=ds_exclude_tags,
     enforce_stim_crosscheck=enforce_stim_crosscheck,
     verbose=False)
-
+    
 occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ, req_auto_response=req_auto_response)
 # If occ2 needs to be filtered
 occ1, occ2 = funa.filter_occ12_from_sysargv(occ2, sys.argv)
 
-occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)'''
+
+funa = pp.Funatlas(merge_bilateral=merge_bilateral)
 
 
 funa.load_extrasynaptic_connectome_from_file()
@@ -133,7 +139,7 @@ plt.yticks(np.arange(0, 68, step=30))
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 fig2.tight_layout()
-plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/Outgoing_connections_RID_mod.pdf", bbox_inches='tight')
+plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS15/Outgoing_connections_RID_mod.pdf", bbox_inches='tight')
 fig2.clf()
 
 fig3, ax = plt.subplots(figsize=(6, 4))
@@ -145,7 +151,7 @@ plt.yticks(np.arange(0, 0.011, step=0.005), fontsize= 20)
 plt.xticks(np.arange(0, 801, step=400), fontsize= 20)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
-#plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/Outgoing_syn_connections_head.pdf", bbox_inches='tight')
+plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS15/Outgoing_syn_connections_head.pdf", bbox_inches='tight')
 fig3.clf()
 
 

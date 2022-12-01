@@ -15,7 +15,9 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 nan_th = 0.3
 save = "--no-save" not in sys.argv
 save_cache = "--save-cache" in sys.argv
@@ -32,6 +34,7 @@ figsize = (12,10)
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] == "--nan-th": nan_th = float(sa[1])
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0] == "--ds-exclude-tags": 
         ds_exclude_tags=sa[1]
         if ds_exclude_tags == "None": ds_exclude_tags=None
@@ -51,7 +54,9 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True,
                  "smooth_mode": smooth_mode, 
                  "smooth_n": smooth_n, "smooth_poly": smooth_poly,          
                  "photobl_appl":True,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa = pp.Funatlas.from_datasets(
                 ds_list,
@@ -68,7 +73,7 @@ occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=re
 # If occ2 needs to be filtered
 occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
                  
-occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
 
 mappa = np.zeros((funa.n_neurons,funa.n_neurons))*np.nan
 count = np.zeros((funa.n_neurons,funa.n_neurons))
@@ -157,5 +162,4 @@ ax2.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True
 ax2.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
 ax2.set_xlim(-0.5, lim)
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/intensitymap_justDF.pdf")
-plt.savefig("/home/sdvali/Desktop/Maps/intensitymap_justDF.pdf")
 print("done")

@@ -5,18 +5,24 @@ plt.rc("xtick",labelsize=14)
 plt.rc("ytick",labelsize=14)
 plt.rc("axes",labelsize=14)
 
-top_n_opt = 13#20
+top_n_opt = 14
+merge = "--no-merge" not in sys.argv
+print("merge:",merge)
 to_paper = "--to-paper" in sys.argv
 unc31 = "--unc31" in sys.argv
 strain = "" if not unc31 else "unc31"
 ds_tags = None if not unc31 else "unc31"
 ds_exclude_tags = "mutant" if not unc31 else None
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 shuffle = False
 shuffle_k = False
 shuffle_n = 0
 shuffle_k_n = 0
 for s in sys.argv:
     sa = s.split(":")
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0] == "--shuffle-n": 
         shuffle_n = int(sa[1])
         shuffle = True
@@ -27,64 +33,43 @@ for s in sys.argv:
 
 ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
 ds_list_spont = "/projects/LEIFER/francesco/funatlas_list_spont.txt"
-'''no_stim_folders = ["/projects/LEIFER/Sophie/NewRecordings/20220214/pumpprobe_20220214_171348/",
-                  "/projects/LEIFER/Sophie/NewRecordings/20220215/pumpprobe_20220215_112405/",
-                  "/projects/LEIFER/Sophie/NewRecordings/20220216/pumpprobe_20220216_161637/"]'''
                   
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
                  "smooth_n": 13, "smooth_poly": 1,    
                  "photobl_appl":True,               
-                 "matchless_nan_th_from_file": True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 # Load Funatlas for actual data
-funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=True,signal="green",
+funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=merge,signal="green",
                                  signal_kwargs = signal_kwargs,
                                  ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags,
                                  enforce_stim_crosscheck=True,
                                  verbose=False)
                                  
 # Load Funatlas for spontaneous activity                                 
-funa_spont = pp.Funatlas.from_datasets(ds_list_spont, merge_bilateral=True,
+funa_spont = pp.Funatlas.from_datasets(ds_list_spont, merge_bilateral=merge,
                                          signal="green",signal_kwargs=signal_kwargs)
 # Get the spontaneous activity correlation
 spontcorr = funa_spont.get_signal_correlations()
-'''
-a,sorter_i,sorter_j,lim = funa.sort_matrix_pop_nans(spontcorr,return_all=True)
-fig = plt.figure(1)
-ax = fig.add_subplot(111)
-ax.imshow(a)
-ax.set_xticks(np.arange(len(sorter_j)))
-ax.set_yticks(np.arange(len(sorter_i)))
-ax.set_xticklabels(funa.neuron_ids[sorter_j])
-ax.set_yticklabels(funa.neuron_ids[sorter_i])
-plt.show()
-quit()
-'''
-
-#print("Reducing to head (also below).")
-#spontcorr = funa_spont.reduce_to_head(spontcorr)
 
 # Get the qvalues
+occ1,occ2 = funa.get_occurrence_matrix(req_auto_response=True)
 occ3 = funa.get_observation_matrix(req_auto_response=True)
 _,inclall_occ2 = funa.get_occurrence_matrix(req_auto_response=True,inclall=True)
-occ1,occ2 = funa.get_occurrence_matrix(req_auto_response=True)
 q,p = funa.get_kolmogorov_smirnov_q(inclall_occ2,return_p=True,strain=strain)
-#q_head = funa_spont.reduce_to_head(q)
 
 # Prepare array to exclude elements on the diagonal
-ondiag = np.zeros_like(q,dtype=bool)#funa.reduce_to_head(q)
+ondiag = np.zeros_like(q,dtype=bool)
 np.fill_diagonal(ondiag,True)
 
-'''Works well
-km = funa.get_kernels_map(occ2,occ3,filtered=True)
-#km[q>0.1]=np.nan
-km[occ1<4]=np.nan'''
 km = funa.get_kernels_map(occ2,occ3,filtered=True,include_flat_kernels=True)
-print("FILTERING Q>0.05")
 km[q>0.05]=np.nan
-#print("Reducing to head (also below).")
-#km = funa.reduce_to_head(km)
+
+###FIXME excl_ = np.loadtxt("/projects/LEIFER/francesco/funatlas/excl_vs_correlations.txt").astype(bool)
+#print("\n\n\n\n\n\nUSING EXCL FROM FILE\n\n\n\n\n\n")
 
 if shuffle_k:
     shuffled_k_r = []
@@ -98,26 +83,25 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
         km = km[:,sorter_j]
     
     # Get the kernel-derived correlations
-    #all_ck = np.zeros((len(funa.head_ai),len(funa.head_ai),len(funa.head_ai)))
-    #all_r_spontcorr_ck = np.zeros(len(funa.head_ai))
     all_ck = np.zeros((funa.n_neurons,funa.n_neurons,funa.n_neurons))
     all_r_spontcorr_ck = np.zeros(funa.n_neurons)
     
-    for ai_i in np.arange(funa.n_neurons):#np.arange(len(funa.head_ai)):#
-        #ai = funa.head_ai[ai_i]
+    for ai_i in np.arange(funa.n_neurons):
         print(ai_i,end="")
-        #all_ck[ai] = funa.get_correlation_from_kernels(inclall_occ2,occ3,q,js=[ai])
-        all_ck[ai_i] = funa.get_correlation_from_kernels_map(km,occ3,js=[ai_i],set_unknown_to_zero=True)#funa.reduce_to_head(occ3)
-        all_ck[ai_i][q>0.05]=np.nan#q_head
-        #print("SYMMETRIZING")
-        #all_ck[ai_i]=funa.symmetrize_nan_preserving(all_ck[ai_i])
+        all_ck[ai_i] = funa.get_correlation_from_kernels_map(km,occ3,js=[ai_i],set_unknown_to_zero=False)#True)
+        all_ck[ai_i][q>0.05]=np.nan
+        nanmask = np.isnan(all_ck[ai_i])*np.isnan(all_ck[ai_i].T)
+        all_ck[ai_i] = 0.5*(np.nansum([all_ck[ai_i],all_ck[ai_i].T],axis=0))
+        all_ck[ai_i][nanmask] = np.nan
         
-        #excl = np.isnan(spontcorr)+np.isnan(all_ck[ai_i])+ondiag 
-        excl = np.isnan(spontcorr)+np.isnan(all_ck[ai_i])+ondiag+np.isnan(q)#q_head
+        excl = np.isnan(spontcorr) | np.isnan(all_ck[ai_i]) | ondiag 
+        ##FIXME excl = excl_ | np.isnan(all_ck[ai_i])
         spontcorr_ = spontcorr[~excl]
         ck_ = all_ck[ai_i][~excl]
+        all_r_spontcorr_ck[ai_i] = np.corrcoef([spontcorr_,ck_])[0,1]
+        #if uncommenting bring excl up
+        #excl = np.isnan(spontcorr)+np.isnan(all_ck[ai_i])+ondiag+np.isnan(q)
         #weights_= 1.0-q[~excl] #q_head
-        all_r_spontcorr_ck[ai_i] = np.corrcoef([spontcorr_,ck_])[0,1] 
         #all_r_spontcorr_ck[ai_i] = pp.weighted_corr(spontcorr_,ck_,weights_)
         print("\r",end="")
         
@@ -129,18 +113,20 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
         if shuffle and shuffle_i>0: np.random.shuffle(sorted_neurons)
         exclnan = np.isnan(all_r_spontcorr_ck[sorted_neurons])
         nonnann = np.sum(~exclnan)
+        print("nonnann",nonnann)
         all_top_neurons_r_spontcorr_ck = np.zeros(nonnann)
         for top_n in np.arange(nonnann): #[top_n_opt]:#
             print("shuffle_k_i ",shuffle_k_i," top_n ",top_n,end="")
             top_neurons = sorted_neurons[~exclnan][-top_n:]
 
-            #ck_top_neurons = funa.get_correlation_from_kernels(inclall_occ2,occ3,q,js=top_neurons)
-            ck_top_neurons = funa.get_correlation_from_kernels_map(km,occ3,js=top_neurons,set_unknown_to_zero=True)#funa.reduce_to_head(occ3)
-            ck_top_neurons[q>0.05]=np.nan #q_head
-            #print("SYMMETRIZING")
-            #ck_top_neurons=funa.symmetrize_nan_preserving(ck_top_neurons)
+            ck_top_neurons = funa.get_correlation_from_kernels_map(km,occ3,js=top_neurons,set_unknown_to_zero=False)#=True)
+            ck_top_neurons[q>0.05]=np.nan 
+            nanmask = np.isnan(ck_top_neurons)*np.isnan(ck_top_neurons.T)
+            ck_top_neurons = 0.5*(np.nansum([ck_top_neurons,ck_top_neurons.T],axis=0))
+            ck_top_neurons[nanmask] = np.nan
 
-            excl = np.isnan(spontcorr)+np.isnan(ck_top_neurons)+ondiag
+            excl = np.isnan(spontcorr) | np.isnan(ck_top_neurons) | ondiag
+            ##FIXME excl = excl_ | np.isnan(ck_top_neurons)
             spontcorr_ = spontcorr[~excl]
             ck_ = ck_top_neurons[~excl]
             top_neurons_r_spontcorr_ck = np.corrcoef([spontcorr_,ck_])[0,1]
@@ -160,8 +146,9 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 ax.set_xlabel(r"$\langle$spontaneous correlation$\rangle_{ds}$")
                 ax.set_ylabel("kernel-derived correlation (top "+str(len(top_neurons))+" neurons)")
                 fig.tight_layout()
-                fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.png",dpi=300,bbox_inches="tight")
-                fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.pdf",bbox_inches="tight")
+                if not unc31:
+                    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.png",dpi=300,bbox_inches="tight")
+                    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.pdf",bbox_inches="tight")
                 
                 fig22 = plt.figure(22)
                 ax = fig22.add_subplot(111)
@@ -170,8 +157,9 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 np.fill_diagonal(ctnplot,np.nan)
                 ax.imshow(ctnplot,interpolation="none")
                 fig22.tight_layout()
-                fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel.png",dpi=300,bbox_inches="tight")
-                fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel.pdf",bbox_inches="tight")
+                if not unc31:
+                    fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel.png",dpi=300,bbox_inches="tight")
+                    fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel.pdf",bbox_inches="tight")
                 
                 fig23 = plt.figure(23)
                 ax = fig23.add_subplot(111)
@@ -184,15 +172,16 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 np.fill_diagonal(ctnplot,np.nan)
                 ax.imshow(ctnplot,interpolation="none")
                 fig23.tight_layout()
-                fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_sorter.png",dpi=300,bbox_inches="tight")
-                fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_sorted.pdf",bbox_inches="tight")
+                if not unc31:
+                    fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_sorter.png",dpi=300,bbox_inches="tight")
+                    fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_sorted.pdf",bbox_inches="tight")
                 
     if shuffle_k:
         shuffled_k_r.append(all_top_neurons_r_spontcorr_ck)
         shuffled_k_r_max[shuffle_k_i] = np.max(all_top_neurons_r_spontcorr_ck)
     
 print([funa.neuron_ids[tn] for tn in top_neurons]) #head_ids
-print("TAKE THIS FOR THE BAR PLOT top_n_opt=",top_n_opt," correlation",np.max(all_top_neurons_r_spontcorr_ck),"funatlas_vs_correlation_opt_bar_plot.py")
+print("TAKE THIS FOR THE BAR PLOT top_n_opt=",top_n_opt," correlation",(all_top_neurons_r_spontcorr_ck[top_n_opt]),"funatlas_vs_correlation_opt_bar_plot.py")
 print("OPT DRIVING NEURONS",[funa_spont.neuron_ids[tn] for tn in sorted_neurons[~exclnan][-top_n_opt:][::-1]])
     
 if not shuffle:
@@ -207,7 +196,8 @@ if not shuffle:
     ax.set_xlabel("top n")
     ax.set_ylabel("r of kernel-derived correlations\nand spontaneous correlations")
     fig.tight_layout()
-    #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_vs_spont.png",dpi=300,bbox_inches="tight")
+    if not unc31:
+        fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_vs_spont.png",dpi=300,bbox_inches="tight")
     
 if shuffle:
     fig = plt.figure(4)

@@ -2,13 +2,17 @@ import numpy as np, matplotlib.pyplot as plt
 import os, sys, json
 import pumpprobe as pp
 
+merge = "--no-merge" not in sys.argv
+print("Merge:",merge)
+
 folder = "/projects/LEIFER/francesco/simulations/activity_connectome_sign2/"
 print("using",folder)
+print("merging" if merge else "not merging")
 
 funa = pp.Funatlas(merge_bilateral=False,merge_dorsoventral=False,
                    merge_numbered=False,merge_AWC=False)
                    
-funa2 = pp.Funatlas(merge_bilateral=True,merge_dorsoventral=False,
+funa2 = pp.Funatlas(merge_bilateral=merge,merge_dorsoventral=False,
                    merge_numbered=False,merge_AWC=True)
 
 corr = np.zeros((funa2.n_neurons,funa2.n_neurons,funa2.n_neurons))*np.nan
@@ -43,4 +47,5 @@ for neu_j in np.arange(funa.n_neurons):
 
 corr = corr/count
 
-np.save(folder+"activity_connectome_correlation_individual.npy",corr)
+add_s = "" if merge else "_no_merge"
+np.save(folder+"activity_connectome_correlation_individual"+add_s+".npy",corr)

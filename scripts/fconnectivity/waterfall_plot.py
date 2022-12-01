@@ -31,16 +31,24 @@ hide_axes_spines = "--hide-axes-spines" in sys.argv
 to_paper = "--to-paper" in sys.argv
 
 nan_thresh = 0.8 #0.3 0.5
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 signal = "green"
 for s in sys.argv:
     sa = s.split(":")
     if sa[0]=="--nan-th": nan_thresh = float(sa[1])
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     if sa[0]=="--signal": signal = sa[1]
 
 rec = wormdm.data.recording(folder)
 events = rec.get_events()['optogenetics']
 #ratio = wormdm.signal.Signal.from_signal_and_reference(folder,"green","red",method=0.0)
-sig = wormdm.signal.Signal.from_file(folder,signal,matchless_nan_th_from_file=True)
+sig = wormdm.signal.Signal.from_file(
+                folder,signal,
+                matchless_nan_th=matchless_nan_th,
+                matchless_nan_th_from_file=matchless_nan_th_from_file,
+                matchless_nan_th_added_only=matchless_nan_th_added_only)
 ratio = sig
 ratio.remove_spikes()
 ratio.appl_photobl()
@@ -50,7 +58,7 @@ ref_index = ratio.info['ref_index']
 labels = cerv.get_labels(ref_index,attr=True)
 fconn = pp.Fconn.from_file(folder)
 
-fig = plt.figure(1,figsize=(10,7))
+fig = plt.figure(1,figsize=(12,7))
 ax1 = fig.add_subplot(111)
 Delta = 5.
 time = np.arange(ratio.data.shape[0])*rec.Dt
@@ -82,8 +90,9 @@ for ip in np.arange(ratio.data.shape[1]):
         #y = ratio.get_smoothed(127,ip,3,"sg_causal")
         y = ratio.get_smoothed(13,i,1,"sg_causal") #13 i 3 sg
         y /= loc_std
+        y[:13] = np.nan
         
-        if labels[i] == "" and only_labeled: continue
+        if labels[i] in [""," "] and only_labeled: continue
         if labels[i] == "AMsoL" or labels[i] == "AMsoR" or labels[i] == "AMso" or labels[i] == "AMSoL"or labels[i] == "AMSoR"or labels[i] == "AmSo": continue
         
         DD = j*Delta-np.median(np.sort(y)[:100])
@@ -133,10 +142,11 @@ if hide_axes_spines:
     ax1.spines['left'].set_visible(False)
 
 try:
-    plt.savefig(folder+"responses/"+folder.split("/")[-2]+"_waterfall.png", dpi=300, bbox_inches="tight",metadata={"Comment":" ".join(sys.argv)})
-    plt.savefig(folder+"responses/"+folder.split("/")[-2]+"_waterfall.pdf", dpi=300, bbox_inches="tight")
+    fig.tight_layout()
+    fig.savefig(folder+"responses/"+folder.split("/")[-2]+"_waterfall.png", dpi=300, bbox_inches="tight",metadata={"Comment":" ".join(sys.argv)})
+    fig.savefig(folder+"responses/"+folder.split("/")[-2]+"_waterfall.pdf", dpi=300, bbox_inches="tight")
     if to_paper:
-        plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig1/"+folder.split("/")[-2]+"_waterfall.pdf", dpi=300, bbox_inches="tight")
+        fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig1/"+folder.split("/")[-2]+"_waterfall.pdf", dpi=300, bbox_inches="tight")
 except:
     print("Figures not saved")
 plt.show()

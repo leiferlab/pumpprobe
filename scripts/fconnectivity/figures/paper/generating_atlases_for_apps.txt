@@ -1,0 +1,2 @@
+python scripts/fconnectivity/build_wfc_atlas.py
+python scripts/fconnectivity/build_wfc_atlas.py --unc31

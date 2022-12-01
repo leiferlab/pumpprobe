@@ -7,7 +7,6 @@
 
 static PyObject *convolution(PyObject *self, PyObject *args);
 static PyObject *convolution1(PyObject *self, PyObject *args);
-static PyObject *convolution128(PyObject *self, PyObject *args);
 static PyObject *slice_test(PyObject *self, PyObject *args);
 
 /////// Python-module-related functions and tables
@@ -16,7 +15,6 @@ static PyObject *slice_test(PyObject *self, PyObject *args);
 static PyMethodDef _convolutionMethods[] = {
     {"convolution", convolution, METH_VARARGS, ""},
     {"convolution1", convolution1, METH_VARARGS, ""},
-    {"convolution128", convolution128, METH_VARARGS, ""},
     {"slice_test", slice_test, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}
 };
@@ -159,68 +157,6 @@ static PyObject *convolution(PyObject *self, PyObject *args) {
     //Py_DECREF(A);
     //Py_DECREF(B);
     //Py_DECREF(out_o);
-    
-    // Return the computed Fourier integral
-    return out_o;
-}
-
-static PyObject *convolution128(PyObject *self, PyObject *args) {
-
-    int32_t M,k;
-    double delta;
-    PyObject *A_o, *B_o, *out_o;
-    
-    if(!PyArg_ParseTuple(args, "OOdi", 
-                &A_o, &B_o, &delta, &k)) 
-                return NULL;
-    
-    // Get the PyArrayObjects. This will also cast the datatypes if needed.
-    PyArrayObject *A_a = (PyArrayObject*) PyArray_FROM_OT(A_o, NPY_FLOAT128);
-    PyArrayObject *B_a = (PyArrayObject*) PyArray_FROM_OT(B_o, NPY_FLOAT128);
-    
-    // Extract the lenghts of h and R, as their shape[0].
-    M = *(PyArray_SHAPE(A_a));
-    
-    // Create the numpy array to be returned
-    out_o = PyArray_SimpleNew(1, PyArray_SHAPE(A_a), NPY_FLOAT128);
-    PyArrayObject *out_a = (PyArrayObject*) PyArray_FROM_OT(out_o, NPY_FLOAT128);
-    Py_INCREF(out_o);
-    
-        
-    // Check that the above conversion worked, otherwise decrease the reference
-    // count and return NULL.                                 
-    if (A_a == NULL || B_a == NULL || out_a == NULL) {
-        Py_XDECREF(A_a);
-        Py_XDECREF(B_a);
-        Py_XDECREF(out_a);
-        return NULL;
-    }
-    
-    // Get pointers to the data in the numpy arrays.
-    long double *A = (long double*)PyArray_DATA(A_a);
-    long double *B = (long double*)PyArray_DATA(B_a);
-    long double *out = (long double*)PyArray_DATA(out_a);
-    
-    //////////////////////////////////
-    //////////////////////////////////
-    // Actual C code
-    //////////////////////////////////
-    //////////////////////////////////
-
-    convolution_128(A,B,M,delta,out,k);
-          
-    //////////////////////////////////
-    //////////////////////////////////
-    // End of C code
-    //////////////////////////////////
-    //////////////////////////////////
-    
-    
-    // Decrease the reference count for the python objects that have been 
-    // declared in this function.
-    Py_XDECREF(A_a);
-    Py_XDECREF(B_a);
-    Py_XDECREF(out_a);
     
     // Return the computed Fourier integral
     return out_o;

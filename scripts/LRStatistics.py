@@ -12,7 +12,10 @@ signal_range = None
 smooth_mode = "sg_causal"
 smooth_n = 13
 smooth_poly = 1
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
+correct_decaying = "--correct-decaying"
 nan_th = 0.3
 save = "--no-save" not in sys.argv
 two_min_occ = "--two-min-occ" in sys.argv
@@ -21,12 +24,19 @@ enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
 
+for s in sys.argv:
+    sa = s.split(":")
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
+
 # Prepare kwargs for signal preprocessing (to be passed to Funatlas, so that
 # it can internally apply the preprocessing to the Signal objects).
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": smooth_mode, 
                  "smooth_n": smooth_n, "smooth_poly": smooth_poly,                 
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file, "photobl_appl":True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only, 
+                 "photobl_appl":True}
 
 funa = pp.Funatlas.from_datasets(
                 ds_list,
@@ -42,7 +52,7 @@ occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=re
 # If occ2 needs to be filtered
 #occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
 
-occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
 
 inclall_occ2 = occ2
 #pvalues,_,_ = funa.get_kolmogorov_smirnov_p(inclall_occ2)
@@ -191,8 +201,7 @@ plt.bar(ypos, Probs_numbers)
 plt.xticks(ypos, probs, rotation=0, fontsize = 10)
 
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/Miscellaneous_Supplement/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/LR_statistics.pdf")
-fig.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/LR_statistics.pdf")
 
 fig2 = plt.figure(figsize=(4, 4))
 #ax = fig.add_axes([0,0,1,1])
@@ -205,12 +214,11 @@ ax = plt.gca()
 plt.ylabel("Probability of q<0.05", fontsize = 25)
 plt.bar(ypos, Probs_numbers)
 plt.xticks(ypos, probs, rotation=0, fontsize = 25)
-plt.yticks(np.arange(0, 0.51, step=0.25), fontsize= 20)
+plt.yticks(np.arange(0, 0.5, step=0.2), fontsize= 20)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf", bbox_inches='tight')
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/LR_statistics_justtwo.pdf", bbox_inches='tight')
-fig2.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/LR_statistics_justtwo.pdf", bbox_inches='tight')
 # after this point I am remaking the mappa of average DF to find out how many of our significant
 # connections are inhibitory
 mappa = np.zeros((funa.n_neurons, funa.n_neurons)) * np.nan
@@ -236,6 +244,7 @@ for ai in np.arange(funa.n_neurons):
             i0 = funa.fconn[ds].i0s[ie]
             i1 = funa.fconn[ds].i1s[ie]
             shift_vol = funa.fconn[ds].shift_vol
+            Dt = funa.fconn[ds].Dt
 
             y = funa.sig[ds].get_segment(i0, i1, baseline=False,
                                          normalize="none")[:, i]
@@ -247,13 +256,22 @@ for ai in np.arange(funa.n_neurons):
                 pre = np.average(y[:shift_vol])
                 if pre == 0: continue
                 dy = np.average(y[shift_vol:] - pre) / pre
+                if correct_decaying:
+                    _,_,_,_,_,df_s_unnorm = funa.get_significance_features(
+                                funa.sig[ds],i,i0,i1,shift_vol,
+                                Dt,nan_th,return_traces=True)
+                    if df_s_unnorm is None: continue
+                    dy = np.average(df_s_unnorm)/pre
+                else:
+                    dy = np.average( y[shift_vol:] - pre )/pre
+                
             else:
                 # std = np.std(y[:shift_vol-signal_range[0]])
                 pre = np.average(y[:shift_vol])
                 # dy = np.average(y[shift_vol-signal_range[0]:shift_vol+signal_range[1]+1] - pre)
                 dy = np.average(np.abs(y[shift_vol - signal_range[0]:shift_vol + signal_range[1] + 1] - pre))
                 dy /= pre
-
+                
             if np.isnan(mappa[ai, aj]):
                 mappa[ai, aj] = dy
             else:
@@ -289,8 +307,7 @@ ax1.set_xlabel("Significance Threshold")
 ax1.set_ylabel("Inhibitory to Excitatory Ratio")
 ax1.set_xscale("log")
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory.pdf")
-fig3.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory.pdf")
 
 q_sorted_inds = np.argsort(q)
 q_sorted = q[q_sorted_inds]
@@ -314,8 +331,7 @@ ax1.set_xlabel("Significance Threshold")
 ax1.set_ylabel("Inhibitory to Excitatory Ratio")
 #ax1.set_xscale("log")
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory_Ratio.pdf")
-fig4.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory_Ratio.pdf")
 
 fig5 = plt.figure(figsize=(10, 5))
 ax1 = fig5.add_subplot()
@@ -324,8 +340,7 @@ ax1.set_xlabel("Significance Threshold")
 ax1.set_ylabel("Fraction of Inhibitory Responses")
 #ax1.set_xscale("log")
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Fraction.pdf")
-fig5.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Fraction.pdf")
 
 fig6 = plt.figure(figsize=(10, 5))
 ax1 = fig6.add_subplot()
@@ -335,24 +350,24 @@ ax1.set_ylabel("Inhibitory to Excitatory Ratio")
 plt.axvline(0.05)
 #ax1.set_xscale("log")
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory_Ratio_lessthan.pdf")
-fig6.clf()
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Excitatory_Ratio_lessthan.pdf")
 
-fig7 = plt.figure(figsize=(5, 3))
+fig7 = plt.figure(figsize=(4, 3))
 ax1 = fig7.add_subplot()
 ax1.plot(q_sorted[np.where(q_sorted<0.1)], fraction[np.where(q_sorted<0.1)], linewidth = 6)
-ax1.set_xlabel("Significance Threshold", fontsize= 20)
-ax1.set_ylabel("Fraction of Inhibitory Responses", fontsize= 20)
+ax1.set_xlabel("Significance Threshold", fontsize= 30)
+ax1.set_ylabel("Fraction of Inhibitory Responses", fontsize= 30)
 ax1.spines['right'].set_visible(False)
 ax1.spines['top'].set_visible(False)
 #ax1.set_xscale("log")
 plt.axvline(0.05, color = "green", linewidth = 3)
-plt.yticks(np.arange(0, 0.41, step=0.2), fontsize= 20)
-plt.xticks(np.arange(0, 0.11, step=0.05), fontsize= 20)
+plt.yticks(np.arange(0, 0.35, step=0.15), fontsize= 25)
+plt.xticks(np.arange(0, 0.11, step=0.05), fontsize= 25)
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics.pdf")
-plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Fraction_lessthan.pdf", bbox_inches='tight')
+#plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Fraction_lessthan.pdf", bbox_inches='tight')
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/Inhibitory_Fraction_lessthan.pdf", bbox_inches='tight')
-fig7.clf()
+
+plt.show()
 
 print("done")
 

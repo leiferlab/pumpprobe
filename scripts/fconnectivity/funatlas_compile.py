@@ -19,8 +19,13 @@ signal = "green"
 req_auto_response = "--req-auto-response" in sys.argv or use_kernels
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 inclall_occ = "--inclall-occ" in sys.argv
+merge_bilateral = "--no-merge-bilateral" not in sys.argv
 nan_th = 1 # To use with inclall-occ
+q_th = None
+matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
+xlim_upper = None
 ylabel = None
 ylim = [-1.1,1.1]
 yticks = None
@@ -41,6 +46,7 @@ if not verbose: print("Suppressing prints from Fconn.")
 dst = "/projects/LEIFER/francesco/funatlas/plots/"
 fmt = "png"
 dpi = 150
+plot_significance_traces = "--plot-significance-traces" in sys.argv
 user = "Francesco"
 exclude = []
 for s in sys.argv:
@@ -48,10 +54,12 @@ for s in sys.argv:
     if sa[0] in ["-j","--j"] : jid = sa[1]
     if sa[0] in ["-i","--i"]: iid = sa[1]
     if sa[0] == "--signal": signal = sa[1]
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
     #if sa[0] == "--leq-rise-time": leq_rise_time = float(sa[1])
     #if sa[0] == "--geq-rise-time": geq_rise_time = float(sa[1])
     #if sa[0] == "--leq-decay-time": leq_decay_time = float(sa[1])
     #if sa[0] == "--geq-decay-time": geq_decay_time = float(sa[1])
+    if sa[0] == "--xlim-upper": xlim_upper = float(sa[1])
     if sa[0] == "--ylabel": ylabel = sa[1]
     if sa[0] == "--ylim": 
         if sa[1] in ["none","None"]:
@@ -65,6 +73,7 @@ for s in sys.argv:
     if sa[0] == "--smooth-n": smooth_n = int(sa[1])
     if sa[0] == "--smooth-poly": smooth_poly = int(sa[1])
     if sa[0] == "--nan-th": nan_th = float(sa[1])
+    if sa[0] == "--q-th": q_th = float(sa[1])
     if sa[0] == "--list": fname = sa[1]
     if sa[0] == "--dst": dst = sa[1] if sa[1][-1]=="/" else sa[1]+"/"
     if sa[0] == "--fmt": fmt=sa[1]
@@ -100,18 +109,23 @@ if not os.path.isdir(dst):
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": smooth_mode, 
                  "smooth_n": smooth_n, "smooth_poly": smooth_poly,
-                 "matchless_nan_th_from_file": matchless_nan_th_from_file}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 # Build Funatlas object
 funatlas = pp.Funatlas.from_datasets(
-                fname,merge_bilateral=True,merge_dorsoventral=False,
+                fname,merge_bilateral=merge_bilateral,merge_dorsoventral=False,
                 merge_numbered=False,signal=signal,signal_kwargs=signal_kwargs,
                 ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags,
                 enforce_stim_crosscheck=enforce_stim_crosscheck,
                 verbose=verbose)
-
+                
 # Save the ds list used                
 funatlas.ds_to_file(dst,fname="aaa_funatlas_ds_list_used.txt")
+
+if q_th is not None:
+    inclall_occ = True
 
 # Occurence matrix. occ1[i,j] is the number of occurrences of the response of i
 # following a stimulation of j. occ2[i,j] is a dictionary containing details
@@ -119,6 +133,10 @@ funatlas.ds_to_file(dst,fname="aaa_funatlas_ds_list_used.txt")
 occ1, occ2 = funatlas.get_occurrence_matrix(
                     req_auto_response=req_auto_response,inclall=inclall_occ)
                     
+if q_th is not None:
+    assert ds_tags is None and ds_exclude_tags == "mutant"
+    q = funatlas.get_kolmogorov_smirnov_q(occ2)
+    occ2[q>q_th] = []
                     
 if alpha_p:
     # Multiply the alpha also by the p values
@@ -169,8 +187,14 @@ else:
     
     #iids = [iid]; jids = [jid]
 
-if figsize is None: fig = plt.figure(1)
-else: fig = plt.figure(1,figsize=figsize)
+if figsize is None: 
+    fig = plt.figure(1)
+    if plot_significance_traces:
+        fig2 = plt.figure(2)
+else: 
+    fig = plt.figure(1,figsize=figsize)
+    if plot_significance_traces:
+        fig2 = plt.figure(2,figsize=figsize)
 for iid in iids:
     for jid in jids:
         # Convert the requested IDs to atlas-indices.
@@ -183,6 +207,11 @@ for iid in iids:
         # Plot the responses.
         fig.clear()
         ax1 = fig.add_subplot(111)
+        if plot_significance_traces:
+            fig2.clear()
+            ax2a = fig2.add_subplot(211)
+            ax2b = fig2.add_subplot(212,sharex=ax2a)
+            
         ls = []
         # Get the necessary information from occ2.
         ys = []
@@ -213,7 +242,7 @@ for iid in iids:
             if not use_kernels:
                 time = (np.arange(i1-i0)-shift_vol)*Dt
             else:
-                time = np.linspace(0,20,100)
+                time = np.linspace(0,20,1000)
             
             if not use_kernels: # get the signal trace
                 norm_range = (None,shift_vol+int(40./Dt))
@@ -306,7 +335,7 @@ for iid in iids:
                     alpha = w_
                 else:
                     alpha = 0.0
-            
+                
             lbl = str(ds)+","+str(ie)+","+str(neu_i)
             if alpha_p: lbl += ","+str(np.around(w_,4))
             
@@ -319,8 +348,19 @@ for iid in iids:
                 l, = ax1.plot(time,y,
                               label=lbl,
                               alpha=alpha,lw=lw,c="#1f77b4")
+                              
             ls.append(l)
-        
+                              
+            if plot_significance_traces:
+                    _,_,_,df_s,sd_s,_ = funatlas.get_significance_features(
+                                funatlas.sig[ds],neu_i,i0,i1,shift_vol,
+                                Dt,nan_th,return_traces=True)
+                                
+                    l_, = ax2a.plot(df_s,label=lbl,alpha=alpha,lw=lw)
+                    ax2a.axhline(np.average(df_s),color=l_.get_color())
+                    l_, ax2b.plot(sd_s,label=lbl,alpha=alpha,lw=lw)
+                    ax2b.axhline(np.average(sd_s),color=l_.get_color())
+                    
         if plot_average:
             t_min = np.max([min(time) for time in times])
             t_max = np.min([max(time) for time in times])
@@ -341,6 +381,9 @@ for iid in iids:
             ax1.plot(time_avg,y_avg,lw=2,c=c)
         
         ax1.axvline(0,c="k",alpha=0.5)
+        #ax1.set_xticks([-30,0,30,60])
+        if xlim_upper is not None:
+            ax1.set_xlim(None,xlim_upper)
         if ylim is not None:
             ax1.set_ylim(ylim[0],ylim[1])
         if yticks is not None:
@@ -356,9 +399,15 @@ for iid in iids:
         if legend: 
             loc = 2 if not use_kernels else 1
             ax1.legend(loc=loc)
+            if plot_significance_traces:
+                ax2a.legend()
+                ax2b.legend()
         if stamp_plot:
             stamp = " ".join(sys.argv)
             stamp=re.sub("(.{100})", "\\1\n", stamp, 0, re.DOTALL)
             pp.provstamp(ax1,-.1,-.1,stamp,6)
         fig.tight_layout()
-        fig.savefig(dst+jid+"->"+iid+"."+fmt,dpi=dpi)
+        fig.savefig(dst+jid+"->"+iid+"."+fmt,dpi=dpi,bbox_inches="tight")
+        if plot_significance_traces:
+            fig2.savefig(dst+jid+"->"+iid+"_significance_traces."+fmt,
+                         dpi=dpi,bbox_inches="tight")

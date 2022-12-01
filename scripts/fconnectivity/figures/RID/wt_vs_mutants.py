@@ -18,6 +18,9 @@ iid = ""
 jid = "RID"
 vmax = 1
 matchless_nan_th = 0.0#1.
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] in ["-i","--i"] : iid=sa[1]
@@ -29,10 +32,11 @@ ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
 
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
-                 "smooth_n": 39, "smooth_poly": 1,
+                 "smooth_n": 13, "smooth_poly": 1,
                  "photobl_appl":True, 
-                 "matchless_nan_th": matchless_nan_th}
-                 #"matchless_nan_th_from_file": True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa_wt = pp.Funatlas.from_datasets(
                 ds_list,merge_bilateral=merge_bilateral,merge_dorsoventral=False,
@@ -52,8 +56,8 @@ _, occ2_unc31 = funa_unc31.get_occurrence_matrix(inclall=inclall)
 ai_RID = funa_wt.ids_to_i(jid)
 ai_i = funa_wt.ids_to_i(iid)
 
-#t = np.linspace(-20,40,120)
-t = np.linspace(-20,60,120)
+t = np.linspace(-10,30,120)
+#t = np.linspace(-20,60,120)
 t0 = np.argmin(np.abs(t-0))
 
 '''resp_wt = np.zeros((len(occ2_wt[ai_i,ai_RID]),len(t)))
@@ -104,8 +108,16 @@ for io in np.arange(len(occ2_wt[ai_i,ai_RID])):
     y = (seg-baseline)
     if relative:
         y = y/baseline
+        
+    if (ds==41 and ie==50 and i == 93): #extremely noisy segment that is not smoothed for some reason 
+        alt_y = funa_wt.sig[ds].get_smoothed(13, i=93, poly=1, mode="sg_causal")
+        alt_y = alt_y[i0:i1]
+        baseline = np.nanmean(alt_y[:shift_vol])#shift_vol//2:
+        y = alt_y-baseline
+        if relative:
+            y = y/baseline
     
-    if np.sum(nan)<0.3*len(nan):# or True: #FIXME FIXME FIXME
+    if np.sum(nan)<0.3*len(nan) : 
     
         '''max_wt[io] = np.nanmax(y[shift_vol:])
         min_wt[io] = np.nanmin(y[shift_vol:])
@@ -146,7 +158,7 @@ for io in np.arange(len(occ2_unc31[ai_i,ai_RID])):
                                 baseline=False,normalize="")[:,i]
     nan = funa_unc31.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
                                 
-    baseline = np.nanmean(seg[shift_vol//2:shift_vol])
+    baseline = np.nanmean(seg[:shift_vol])#shift_vol//2:
     y = (seg-baseline)
     if relative:
         y = y/baseline
@@ -197,8 +209,12 @@ ax1t = fig.add_subplot(gs[0,0])
 ax2t = fig.add_subplot(gs[0,1],sharey=ax1t)
 im = ax1.imshow(resp_wt,aspect="auto",interpolation="nearest",vmin=-vmax,vmax=vmax,cmap="coolwarm")
 ax2.imshow(resp_unc31,aspect="auto",interpolation="nearest",vmin=-vmax,vmax=vmax,cmap="coolwarm")
-ax1.axvline(t0)
-ax2.axvline(t0)
+ax1.axvline(t0,color="#000000")
+ax2.axvline(t0,color="#000000")
+ax1t.axvline(t0,color="#000000")
+ax1t.axhline(0,color="#000000")
+ax2t.axvline(t0,color="#000000")
+ax2t.axhline(0,color="#000000")
 
 nwt = len(resp_wt)
 nunc31 = len(resp_unc31)
@@ -226,10 +242,10 @@ ax2t.plot(resp_unc31_avg)
 #ax2t.fill_between(np.arange(len(resp_unc31_avg)),resp_unc31_min,resp_unc31_max,color="k",alpha=0.1)
 ax1t.fill_between(np.arange(len(resp_wt_avg)),resp_wt_avg-resp_wt_std,resp_wt_avg+resp_wt_std,color="k",alpha=0.1)
 ax2t.fill_between(np.arange(len(resp_unc31_avg)),resp_unc31_avg-resp_unc31_std,resp_unc31_avg+resp_unc31_std,color="k",alpha=0.1)
-ax1t.plot(resp_wt_avg_1)
-ax1t.plot(resp_wt_avg_2)
-ax2t.plot(resp_unc31_avg_1)
-ax2t.plot(resp_unc31_avg_2)
+#ax1t.plot(resp_wt_avg_1)
+#ax1t.plot(resp_wt_avg_2)
+#ax2t.plot(resp_unc31_avg_1)
+#ax2t.plot(resp_unc31_avg_2)
 
 min1 = np.min(resp_wt_avg-resp_wt_std)
 min2 = np.min(resp_unc31_avg-resp_unc31_std)
@@ -246,16 +262,25 @@ ax1t.set_ylabel("$\Delta F/F$")
 
 #xticks = [0,20,40,60,80,100]
 xticks = [00,40,80]
+xticks = np.zeros(3,dtype=int)
+xticks[0] = np.argmin(np.abs(t+10))
+xticks[1] = np.argmin(np.abs(t))
+xticks[2] = np.argmin(np.abs(t-20))
+print("\n\n\n\n\n\n")
+print(xticks)
+print("\n\n\n\n\n\n")
 ax1.set_xticks(xticks)
 ax1.set_xticklabels((np.around(t[xticks],0)).astype(int))
 de = int(len(resp_wt)//4)
 if de==0: de=1
 ax1.set_yticks(np.arange(len(resp_wt))[::de])
+ax1.set_yticklabels([str(ti+1) for ti in np.arange(len(resp_wt))[::de]])
 ax2.set_xticks(xticks)
 ax2.set_xticklabels((np.around(t[xticks],0)).astype(int))
 de = int(len(resp_unc31)//4)
 if de==0: de=1
 ax2.set_yticks(np.arange(len(resp_unc31))[::de])
+ax2.set_yticklabels([str(ti+1) for ti in np.arange(len(resp_unc31))[::de]])
 
 ax1.set_xlabel("Time (s)")
 ax1.set_ylabel("Trials")

@@ -20,9 +20,10 @@ ampl_thresh = 1.
 ampl_min_time = 10.0
 deriv_thresh = 1.#1.3
 deriv_min_time = 2#3.5
-nan_thresh = 0.5
+nan_thresh = 0.3
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 smooth_mode = "sg"
 smooth_n = 5
 smooth_poly = 1
@@ -65,6 +66,8 @@ settings_dict = {"delta_t_pre": delta_t_pre, "ratio_method": ratio_method,
                  "ampl_thresh": ampl_thresh, "ampl_min_time": ampl_min_time,
                  "deriv_thresh": deriv_thresh, "deriv_min_time": deriv_min_time,
                  "nan_thresh": nan_thresh, "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_from_file":matchless_nan_th_from_file,
+                 "matchless_nan_th_added_only":matchless_nan_th_added_only,
                  "save": save}
                  
 tubatura.log("",False)
@@ -84,8 +87,10 @@ if sig_type == "ratio":
                                                          method=ratio_method)
 elif sig_type == "green":
     sig = wormdm.signal.Signal.from_file(
-            folder,"green",matchless_nan_th=matchless_nan_th,
-            matchless_nan_th_from_file=matchless_nan_th_from_file)
+            folder,"green",
+            matchless_nan_th=matchless_nan_th,
+            matchless_nan_th_from_file=matchless_nan_th_from_file,
+            matchless_nan_th_added_only=matchless_nan_th_added_only)
     sig.appl_photobl()
 # Smooth and calculate the derivative of the signal (derivative needed for
 # detection of responses)

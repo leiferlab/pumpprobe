@@ -8,7 +8,10 @@ plt.rc("axes",labelsize=18)
 relative = "--relative" in sys.argv
 jid = "RID"
 vmax = 1
-matchless_nan_th = 0.0#1.
+
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] in ["-i","--i"] : iid=sa[1]
@@ -22,8 +25,9 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True,
                  "smooth_mode": "sg_causal", 
                  "smooth_n": 13, "smooth_poly": 1,
                  "photobl_appl":True, 
-                 "matchless_nan_th": matchless_nan_th}
-                 #"matchless_nan_th_from_file": True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa_wt = pp.Funatlas.from_datasets(
                 ds_list,merge_bilateral=False,merge_dorsoventral=False,
@@ -59,7 +63,7 @@ dn = 1.0
 d = 0.2
 bar_width = 0.2
 
-dff_th = 0.1
+dff_th = 0.1#0.1
 
 for ai_i in np.arange(len(occ2_wt[:,ai_RID])):
     if ai_i == ai_RID: continue
@@ -131,9 +135,12 @@ for ai_i in np.arange(len(occ2_wt[:,ai_RID])):
     
     if np.abs(np.average(avg_wt))<dff_th and np.abs(np.average(avg_unc31))<dff_th:
         continue
+    
+    if np.isnan(np.nanmean(avg_wt)) or np.isnan(np.nanmean(avg_unc31)):
+        continue
 
-    ax2.bar(n*dn,np.average(avg_wt),color="C0",width=bar_width,alpha=0.6)
-    ax2.bar(n*dn+d,np.average(avg_unc31),color="C1",width=bar_width,alpha=0.6)
+    ax2.bar(n*dn,np.nanmean(avg_wt),color="C0",width=bar_width,alpha=0.6)
+    ax2.bar(n*dn+d,np.nanmean(avg_unc31),color="C1",width=bar_width,alpha=0.6)
     
     ax1.scatter(n*dn+np.random.random(len(avg_wt))*bar_width - bar_width/2, avg_wt, color="C0",s=0.5)
     ax1.scatter(n*dn+d+np.random.random(len(avg_unc31))*bar_width - bar_width/2, avg_unc31, color="C1",s=0.5)

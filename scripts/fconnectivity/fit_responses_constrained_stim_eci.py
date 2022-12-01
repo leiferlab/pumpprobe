@@ -16,6 +16,7 @@ sig_green = "--signal:green" in sys.argv
 skip_if_not_manually_located = "--skip-if-not-manually-located" in sys.argv
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 for s in sys.argv[1:]:
     sa = s.split(":")
     if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
@@ -38,8 +39,10 @@ if not sig_green:
 else:
     tubatura.log("Using green signal.")
     sig = wormdm.signal.Signal.from_file(
-                folder,"green",matchless_nan_th=matchless_nan_th,
-                matchless_nan_th_from_file=matchless_nan_th_from_file)
+                folder,"green",
+                matchless_nan_th=matchless_nan_th,
+                matchless_nan_th_from_file=matchless_nan_th_from_file,
+                matchless_nan_th_added_only=matchless_nan_th_added_only)
     sig.appl_photobl()
 # Smooth and calculate the derivative of the signal (derivative needed for
 # detection of responses)
@@ -154,16 +157,16 @@ for ie in np.arange(fconn.n_stim):
             if neu_j in fconn.resp_neurons_by_stim[ie-1]:
                 y = sig.get_segment(i0,i1,shift_vol,unsmoothed_data=True,
                                     baseline_mode="constant",
-                                    baseline_range=[shift_vol-4,shift_vol],
-                                    normalize="none")[:,neu_j]
+                                    baseline_range=[shift_vol-4,shift_vol])[:,neu_j]#, FIXME FIXME FIXME
+                                    #normalize="none")[:,neu_j]
             else:
                 y = sig.get_segment(i0,i1,shift_vol,unsmoothed_data=True,
-                                    baseline_mode="constant",
-                                    normalize="none")[:,neu_j]
+                                    baseline_mode="constant")[:,neu_j]#, FIXME FIXME FIXME
+                                    #normalize="none")[:,neu_j]
         else:
             y = sig.get_segment(i0,i1,shift_vol,unsmoothed_data=True,
-                                    baseline_mode="constant",
-                                    normalize="none")[:,neu_j]
+                                    baseline_mode="constant")[:,neu_j]#, FIXME FIXME FIXME
+                                    #normalize="none")[:,neu_j]
         
         #y = sig.get_segment(i0,i1,shift_vol)[:,neu_j]
         if np.all(np.isinf(y)) or np.all(np.isnan(y)): continue

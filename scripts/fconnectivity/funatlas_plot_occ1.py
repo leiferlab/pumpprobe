@@ -2,15 +2,23 @@ import numpy as np, sys, matplotlib.pyplot as plt
 import pumpprobe as pp
 
 ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
-if len(sys.argv)>1: 
-    if not sys.argv[1] == "--head-only":
-        ds_list = sys.argv[1] 
+matchless_nan_th = None
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
+matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
+to_paper = "--to-paper"
+       
+for s in sys.argv:
+    sa = s.split(":")
+    if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
+    if sa[0] == "--ds-list": ds_list = sa[1]
         
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
                  "smooth_n": 13, "smooth_poly": 1,
                  "photobl_appl":True,            
-                 "matchless_nan_th_from_file": True}
+                 "matchless_nan_th_from_file": matchless_nan_th_from_file,
+                 "matchless_nan_th": matchless_nan_th,
+                 "matchless_nan_th_added_only": matchless_nan_th_added_only}
 
 funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=False,
                                  merge_dorsoventral=False,merge_AWC=False,
@@ -153,7 +161,7 @@ ax.legend()
 plt.tight_layout()
 plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
             "neuron_hist_obs_stim.pdf", bbox_inches="tight")
-
+            
 fig = plt.figure(41,figsize=(16,9))
 ax = fig.add_subplot(111)
 x = np.arange(len(niobs[funa.head_ai]))
@@ -178,7 +186,9 @@ ax.legend(fontsize=18)
 plt.tight_layout()
 plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
             "neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
-
+if to_paper:
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
+            
 fig = plt.figure(5,figsize=(9,9))
 ax = fig.add_subplot(111)
 # occ1 is the number of times i responds when j is stimulated (and autoresponds)
