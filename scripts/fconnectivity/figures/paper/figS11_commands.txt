@@ -1,1 +1,0 @@
-python scripts/AFD_AIY_2_fr.py

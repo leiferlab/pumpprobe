@@ -1,4 +1,4 @@
 python scripts/fconnectivity/waterfall_plot.py /projects/LEIFER/francesco/pumpprobe/AKSxneuropal/20211104/pumpprobe_20211104_163944/ --signal:green --hide-axes-spines --nan-th:0.5 --alphabetical-sort --only-labeled --to-paper
-python scripts/heat_raster_plot.py -j:AVJR --i:AVDR --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only 
-python scripts/heat_raster_plot.py -j:AVER --i:AVAR --inclall-occ --sort-avg --relative --vmax:1 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only 
-python scripts/heat_raster_plot.py -j:AVEL --i:SAADL --inclall-occ --sort-avg --relative --vmax:.6 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only 
+python scripts/heat_raster_plot.py -j:AVJR --i:AVDR --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --nan-th:0.05 --dst:<dst folder>
+python scripts/heat_raster_plot.py -j:AVER --i:AVAR --inclall-occ --sort-avg --relative --vmax:1 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --nan-th:0.05 --dst:<dst folder>
+python scripts/heat_raster_plot.py -j:AVEL --i:SAADL --inclall-occ --sort-avg --relative --vmax:.6 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --nan-th:0.05 --dst:<dst folder>

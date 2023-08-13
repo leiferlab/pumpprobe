@@ -1,7 +1,7 @@
-python scripts/fconnectivity/funatlas_plot_intensity_map.py --no-merge-bilateral --inclall-occ --req-auto-response --ds-exclude-tags:mutant --alpha-kolmogorov-smirnov --alpha-max:1.0 --alpha-min:0.5 --no-stamp --pop-nans --figsize:12,10 --to-paper --sim --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --cmap:Spectral_r
+python scripts/fconnectivity/funatlas_plot_intensity_map.py --no-merge-bilateral --inclall-occ --req-auto-response --ds-exclude-tags:mutant --alpha-kolmogorov-smirnov --alpha-max:1.0 --alpha-min:0.5 --no-stamp --pop-nans --figsize:12,10 --to-paper --sim --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --cmap:Spectral_r --nan-th:0.05
 
-python scripts/LRStatistics.py --inclall-occ --no-merge-bilateral --req-auto-response --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying
-python scripts/LRStatistics_tost_q.py  --inclall-occ --no-merge-bilateral --req-auto-response --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying
+python scripts/LRStatistics.py --inclall-occ --no-merge-bilateral --req-auto-response --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --nan-th:0.05
+python scripts/LRStatistics_tost_q.py  --inclall-occ --no-merge-bilateral --req-auto-response --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --nan-th:0.05
 
-python scripts/Anatomical_hop_depth.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only
-python scripts/Anatomical_hop_depth_tost_q.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only
+python scripts/Anatomical_hop_depth.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only --nan-th:0.05
+python scripts/Anatomical_hop_depth_tost_q.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only --nan-th:0.05

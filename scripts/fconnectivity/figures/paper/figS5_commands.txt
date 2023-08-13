@@ -1,5 +1,3 @@
-python scripts/Variability_matrix2.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th-from-file --pop-nans
-
+python funatlas_plot_intensity_map.py --no-merge-bilateral --inclall-occ --req-auto-response --ds-exclude-tags:mutant --alpha-kolmogorov-smirnov --alpha-max:1. --alpha-min:0.5 --no-stamp --pop-nans --figsize:12,10 --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --cmap:Spectral_r --dst:<destination folder> --no-save
 python scripts/qvalues_map.py --req-auto-response --inclall-occ --no-stamp --pop-nans --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only
 
-python scripts/occ3_qval_histplots.py --inclall-occ --req-auto-response --no-stamp --no-merge-bilateral --matchless-nan-th:0.5 --matchless-nan-th-added-only
