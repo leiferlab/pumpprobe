@@ -151,7 +151,7 @@ def plot_linlog(x,y,linlog_edge,fig,axis="y",color="C0",size=0.5,xlim=None):
 
     return ax1, ax2
     
-def scatter_hist(x, y, ax, ax_histx, ax_histy, label="", binwidth=0.25, binsx=None, binsy=None, alpha_scatter=1,alpha_hist=1,color=None,**hist_kwargs):
+def scatter_hist(x, y, ax, ax_histx, ax_histy, label="", binwidth=0.25, binsx=None, binsy=None, alpha_scatter=1,alpha_hist=1,color=None,hist_density=False,**hist_kwargs):
     # no labels
     ax_histx.tick_params(axis="x", labelbottom=False)
     ax_histy.tick_params(axis="y", labelleft=False)
@@ -168,3 +168,47 @@ def scatter_hist(x, y, ax, ax_histx, ax_histy, label="", binwidth=0.25, binsx=No
     
     ax_histx.hist(x, bins=binsx,alpha=alpha_hist,color=color,**hist_kwargs)
     ax_histy.hist(y, bins=binsy,orientation='horizontal',alpha=alpha_hist,color=color,**hist_kwargs)
+    
+def simple_beeswarm(y, nbins=None):
+    """
+    Returns x coordinates for the points in ``y``, so that plotting ``x`` and
+    ``y`` results in a bee swarm plot.
+    https://stackoverflow.com/questions/36153410/how-to-create-a-swarm-plot-with-matplotlib
+    """
+    y = np.asarray(y)
+    if nbins is None:
+        nbins = len(y) // 6
+
+    # Get upper bounds of bins
+    x = np.zeros(len(y))
+    ylo = np.min(y)
+    yhi = np.max(y)
+    dy = (yhi - ylo) / nbins
+    ybins = np.linspace(ylo + dy, yhi - dy, nbins - 1)
+
+    # Divide indices into bins
+    i = np.arange(len(y))
+    ibs = [0] * nbins
+    ybs = [0] * nbins
+    nmax = 0
+    for j, ybin in enumerate(ybins):
+        f = y <= ybin
+        ibs[j], ybs[j] = i[f], y[f]
+        nmax = max(nmax, len(ibs[j]))
+        f = ~f
+        i, y = i[f], y[f]
+    ibs[-1], ybs[-1] = i, y
+    nmax = max(nmax, len(ibs[-1]))
+
+    # Assign x indices
+    dx = 1 / (nmax // 2)
+    for i, y in zip(ibs, ybs):
+        if len(i) > 1:
+            j = len(i) % 2
+            i = i[np.argsort(y)]
+            a = i[j::2]
+            b = i[j+1::2]
+            x[a] = (0.5 + j / 3 + np.arange(len(b))) * dx
+            x[b] = (0.5 + j / 3 + np.arange(len(b))) * -dx
+
+    return x

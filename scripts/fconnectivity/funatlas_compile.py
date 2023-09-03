@@ -252,7 +252,8 @@ for iid in iids:
                                                  norm_range=norm_range)[:,neu_i]
                 if nan_th<1:
                     nany = funatlas.sig[ds].get_segment_nan_mask(i0,i1)[:,neu_i]
-                    if np.sum(nany)>nan_th*len(nany): continue
+                    #if np.sum(nany)>nan_th*len(nany): continue
+                    if not pp.Fconn.nan_ok(nany,nan_th*len(nany)): continue
             else:
                 y_ec = funatlas.fconn[ds].get_kernel_ec(ie,neu_i)
                 if y_ec is None: 
@@ -291,14 +292,14 @@ for iid in iids:
                                                 funatlas.sig[ds],
                                                 neu_i,i0,i1,shift_vol,
                                                 funatlas.fconn[ds].Dt,
-                                                nan_th=0.3)
+                                                nan_th=pp.Funatlas.nan_th)
                 
                     
                 dff__i,_,sd__i = funatlas.get_significance_features(
                                                 funatlas.sig[ds],
                                                 neu_i,i0,i1,shift_vol,
                                                 funatlas.fconn[ds].Dt,
-                                                nan_th=0.3)
+                                                nan_th=pp.Funatlas.nan_th)
                 
                 if dff__j is not None and dff__i is not None:
                     act.append(dff__j)

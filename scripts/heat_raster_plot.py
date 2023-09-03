@@ -11,7 +11,7 @@ relative = "--relative" in sys.argv
 nomerge  = "--nomerge" in sys.argv
 paired = "--paired" in sys.argv
 unc31 = "--unc31" in sys.argv
-req_auto_response = "--req_auto_response" in sys.argv
+req_auto_response = "--req_auto_response" in sys.argv or "--req-auto-response" in sys.argv
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
@@ -19,6 +19,7 @@ iid = "" #Downstream neuron
 jid = "" #Stimulated neuron
 vmax = 0.5
 dst = None
+nan_th = pp.Funatlas.nan_th
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] in ["-i","--i"] : iid=sa[1] #Downstream neuron
@@ -26,6 +27,7 @@ for s in sys.argv:
     if sa[0] == "--vmax": vmax=float(sa[1])
     if sa[0] == "--matchless-nan-th": matchless_nan_th=float(sa[1])
     if sa[0] == "--dst": dst=sa[1]
+    if sa[0] == "--nan-th": nan_th = float(sa[1])
 
 if dst is None: 
     print("Specify --dst directory.")    
@@ -84,6 +86,7 @@ assert instances > 0, "No observations of neuron pair found"
 
 for io in np.arange(instances):
     o = occ2_wt[ai_i, ai_j][io]
+    print(o)
     ds = o["ds"] #dataset (e.g. the recording number)
     ie = o["stim"] #stimulation instance
     i = o["resp_neu_i"] #responding neuron
@@ -112,7 +115,8 @@ for io in np.arange(instances):
         y_upstream = y_upstream/baseline_upstream
 
     
-    if np.sum(nan)<.3*len(nan):
+    #if np.sum(nan)<.3*len(nan):  !!hardcoded threshold
+    if pp.Fconn.nan_ok(nan,nan_th*len(nan)):
         
         max_wt.append(np.nanmax(y[shift_vol:]))
         min_wt.append(np.nanmin(y[shift_vol:]))
@@ -140,6 +144,8 @@ if sort_max:
 elif sort_avg:
     resp_wt = resp_wt[np.argsort(avg_wt)[::sortorder],:]
     resp_upstream = resp_upstream[np.argsort(avg_wt)[::sortorder],:] #sort upstream to match response
+    
+print("sorter",np.argsort(avg_wt)[::sortorder])
 
 if paired:
     cols = 2
@@ -151,7 +157,7 @@ else:
 # and (3/4)*5. vertical units when we have 14 rows + (1/4)*5.5 or 1.375 vertical units for the average trace
 # We can probably go even tighter on the rows.. to say 4. So that works out to 0.285 units per row
 fig_width = 3.5*cols
-hieght_per_row = 0.28
+hieght_per_row = 0.224#0.28
 trace_height = 1.37 #in abs units
 buffer_rows = 2
 fig_height = trace_height + len(resp_wt)*hieght_per_row + buffer_rows*hieght_per_row

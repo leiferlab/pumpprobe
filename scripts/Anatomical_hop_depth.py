@@ -15,7 +15,7 @@ smooth_poly = 1
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
-nan_th = 0.3
+nan_th = 0.05
 save = "--no-save" not in sys.argv
 
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
@@ -130,9 +130,10 @@ ax.set_xlabel('Min Anatomical Path Length',fontsize= 25)
 ax.set_ylabel('Probability of Functional Connection \n Given n Hops',fontsize= 25)
 ax.set_yticks([0.0,0.06,0.12])
 ax.set_yticklabels(["0.0","0.06","0.12"],fontsize=25)
-ax.set_ylim(0,0.18)
+ax.set_ylim(0,0.13)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth2.txt", np.array([np.array(labels).astype(float), probs]))
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth2.pdf", bbox_inches='tight')
 
 iids = jids = funa.neuron_ids
@@ -243,6 +244,7 @@ ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 labels = ['q < 0.05 connections','all possible pairs']
 plt.legend(labels, fontsize = 15)
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth.txt", np.array([min_anatomical_hops_flat,min_anatomical_hops_all_flat]).T, delimiter=",")
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/AconnHopDepth.pdf", bbox_inches='tight')
 
 plt.show()

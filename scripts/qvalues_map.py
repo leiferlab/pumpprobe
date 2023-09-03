@@ -20,7 +20,7 @@ smooth_poly = 1
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
-nan_th = 0.3
+nan_th = pp.Funatlas.nan_th
 save = "--no-save" not in sys.argv
 vmax = 0.4
 cmap = 'Oranges_r'
@@ -71,7 +71,8 @@ occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=re
 # If occ2 needs to be filtered
 occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
                  
-occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=req_auto_response)
+
 
 if inclall_occ: inclall_occ2 = occ2
 qvalues, tost_q = funa.get_kolmogorov_smirnov_q(inclall_occ2,
@@ -111,21 +112,29 @@ ax3.set_xticklabels(funa.head_ids[sorter_j], fontsize=4, rotation=90)
 ax3.set_yticklabels(funa.head_ids[sorter_i], fontsize=4)
 ax3.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True)
 ax3.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
-ax3.set_xlim(-0.5, lim)
+ax3.set_xlim(-0.5, lim+0.5)
 if merge_bilateral:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/qvalues_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/qvalues_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/qvalues_merged.pdf",dpi=300, bbox_inches="tight")
 else:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/qvalues_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/qvalues_unmerged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/qvalues_unmerged.pdf",dpi=300, bbox_inches="tight")
+    f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/qvalues_unmerged.txt","w")
+    ll_ = funa.head_ids
+    f.write(","+",".join(ll_[sorter_j])+"\n")
+    s = ""
+    for i in np.arange(qvalues_head.shape[0]):
+        s += ll_[sorter_i][i]+","+",".join(qvalues_head[i].astype(str)+"\n")
+    s = s[:-1]
+    f.write(s)
     
 fig3.clf()
 
 tqhmax = np.nanmax(tost_q_head)
 div = int(0.05/tqhmax*256)
 
-colors1 = plt.cm.winter_r(np.linspace(0., 1, div))
-colors2 = plt.cm.cool(np.linspace(0, 1, 256-div))
+colors1 = plt.cm.autumn(np.linspace(0., 1, div))
+colors2 = plt.cm.viridis_r(np.linspace(0, 1, 256-div))
 colors = np.vstack((colors1, colors2))
 mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
     
@@ -147,8 +156,8 @@ ax.set_xticklabels(funa.head_ids[sorter_j], fontsize=4, rotation=90)
 ax.set_yticklabels(funa.head_ids[sorter_i], fontsize=4)
 ax.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True)
 ax.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
-ax.set_xlim(-0.5, lim)
+ax.set_xlim(-0.5, lim+0.5)
 if merge_bilateral:
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/tost_q_merged.pdf")
+    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/tost_q_merged.pdf",dpi=300, bbox_inches="tight")
 else:
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/tost_q_unmerged.pdf")
+    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/tost_q_unmerged.pdf",dpi=300, bbox_inches="tight")

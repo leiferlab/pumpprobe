@@ -22,7 +22,7 @@ smooth_poly = 1
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
-nan_th = 0.3
+nan_th = pp.Funatlas.nan_th
 save = "--no-save" not in sys.argv
 save_cache = "--save-cache" in sys.argv
 use_rise_times = "--use-decay-times" not in sys.argv
@@ -38,6 +38,7 @@ alphamax_set = None
 alphamin_set = None
 alphalbl_set = None
 alphaticklabels = None
+ticklabelsize = 4
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
@@ -208,11 +209,11 @@ if plot:
     ax.set_xticks(np.arange(len(sorter_j)))
     ax.set_yticks(np.arange(len(sorter_i)))
     if SIM:
-        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=5,rotation=90)
-        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=5)
+        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=ticklabelsize,rotation=90)
+        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=ticklabelsize)
     else:
-        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=5,rotation=90)
-        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=5)
+        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=ticklabelsize,rotation=90)
+        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=ticklabelsize)
     ax.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True)
     ax.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
     ax.set_xlim(-0.5,lim)
@@ -231,6 +232,17 @@ if save:
         txt_fname = "funatlas_timescales_map_excl_"+"-".join([str(a) for a in ds_exclude_i])+".txt"
     np.savetxt(folder+txt_fname,mappa_full)
     if to_paper and plot:
-        plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS8/funatlas_timescales_map.pdf", dpi=600, bbox_inches="tight")
+        #np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS10/funatlas_timescales_map.txt",mappa)
+        
+        f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS10/funatlas_timescales_map.txt","w")
+        f.write(",".join(funa.head_ids[sorter_j])+"\n")
+        s = ""
+        for i in np.arange(mappa.shape[0]):
+            s += funa.head_ids[sorter_i][i]+","+",".join(mappa[i].astype(str))+"\n"
+        s = s[:-1]
+        f.write(s)
+        f.close()
+        np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS10/funatlas_timescales_map_transparency.txt",alphas)
+        plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS10/funatlas_timescales_map.pdf", dpi=600, bbox_inches="tight")
 
 plt.show()

@@ -1,2 +1,0 @@
-python scripts/fconnectivity/figures/2Pspotcharacterization/plot_spot_sections.py --to-paper 
-python scripts/fconnectivity/figures/gur-3/gur3_exc.py --to-paper

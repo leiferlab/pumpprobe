@@ -7,6 +7,9 @@ from statsmodels.stats.weightstats import ttost_ind as ttost_ind
 from scipy.signal import savgol_coeffs
 
 class Funatlas:
+
+    nan_th = 0.05
+    '''Global nan threshold'''
     
     fname_neuron_ids = "aconnectome_ids.txt"
     '''Name of file containing full list of neurons'''
@@ -478,9 +481,6 @@ class Funatlas:
         else:
             return atlas_i
             
-    def ids_to_ai(self,*args,**kwargs):
-        return self.ids_to_i(*args,**kwargs)
-            
     def i_to_ai(self,i,i_ds):
         '''Converts dataset-specific indices to atlas indices (ai).
         
@@ -861,7 +861,8 @@ class Funatlas:
          i.e. the times j was stimulated
         and i was being observed. Useful to normalize occ1 from 
         get_occurrence_matrix().'''
-        nan_th = 0.3
+        nan_th = self.nan_th
+        print("CHECK NEW NAN THRESHOLD CHECK, CTRL+F nan_ok")
 
         # Iterate over datasets
         for i_ds in np.arange(len(self.ds_list)):
@@ -879,7 +880,8 @@ class Funatlas:
                 i0 = self.fconn[i_ds].i0s[ie]
                 i1 = self.fconn[i_ds].i1s[ie]
                 nan_mask = self.sig[i_ds].get_segment_nan_mask(i0, i1)
-                nan_selection = np.sum(nan_mask, axis=0) <= nan_th * (i1 - i0)
+                #nan_selection = np.sum(nan_mask, axis=0) <= nan_th * (i1 - i0)
+                nan_selection = pp.Fconn.nan_ok(nan_mask,nan_th * (i1 - i0))
                 
                 y = self.sig[i_ds].get_segment(i0,i1,baseline=False,normalize="none")
                 presel = np.ones(len(nan_selection),dtype=bool)
@@ -1309,8 +1311,7 @@ class Funatlas:
         return dFF
         
     def get_deltaFoverF(self, occ2, interval=(0,30), normalize=["baseline"],
-                        return_all=False,exclude_ds=[],correct_decaying=True,
-                        nan_th=0.3):
+                        return_all=False,exclude_ds=[],correct_decaying=True,init=0):
         '''Returns the Funatlas-compiled average deltaF/F over the given 
         interval.
         
@@ -1332,8 +1333,6 @@ class Funatlas:
         correct_decaying: bool (optional)
             Whether to apply the correction of decaying responses to previous 
             stimulation. Unless you're debugging, use True. Default: True.
-        nan_th: float (optional)
-            Threshold for density of nans over which a response is discarded.
                         
         Returns
         -------
@@ -1345,7 +1344,7 @@ class Funatlas:
         '''
         
         n_neu = len(occ2)
-        dFF = np.zeros((n_neu,n_neu))
+        dFF = np.zeros((n_neu,n_neu))*init
         if return_all:
             dFF_all = np.empty((n_neu,n_neu),dtype=object)
             traces = np.empty((n_neu,n_neu),dtype=object)
@@ -1388,7 +1387,7 @@ class Funatlas:
                     if correct_decaying:
                         _,_,_,_,_,df_s_unnorm = self.get_significance_features(
                                     self.sig[ds],resp_neu_i,i0,i1,shift_vol,
-                                    Dt,nan_th,return_traces=True)
+                                    Dt,self.nan_th,return_traces=True)
                         if df_s_unnorm is None: continue
                         # This starts from shift_vol, so 
                         if dt0<0: dt0=0
@@ -2376,7 +2375,8 @@ class Funatlas:
         y = sig.get_segment(i0,i1,baseline=False,normalize="none")
         nan_mask = sig.get_segment_nan_mask(i0,i1)
         
-        if np.sum(nan_mask[:,neu_i])>nan_th*len(y[:,neu_i]):
+        #if np.sum(nan_mask[:,neu_i])>nan_th*len(y[:,neu_i]):
+        if not pp.Fconn.nan_ok(nan_mask[:,neu_i],nan_th*len(y[:,neu_i])):
             if return_traces:
                 return None,None,None, None, None, None
             else:
@@ -2445,7 +2445,7 @@ class Funatlas:
             cache_file_sd = "/projects/LEIFER/francesco/funatlas/qvalue_kolmogorov_smirnov_sd_unc31.txt"
             
             
-        folders = np.loadtxt(ds_list, dtype='str')
+        folders = np.loadtxt(ds_list, dtype='str')#, delimiter="\n")
         n_ds = len(folders)
 
         signal_kwargs = {"remove_spikes": True,  "smooth": True, 
@@ -2454,7 +2454,7 @@ class Funatlas:
                          "photobl_appl":True,          
                          "matchless_nan_th_from_file": True}
 
-        nan_th = 0.3
+        nan_th = cls.nan_th
         cache_dict = {"delta_t_pre": delta_t_pre,
                       "ampl_thresh_og":ampl_thresh_og,
                       "ampl_min_time_og":ampl_min_time_og,
@@ -2482,6 +2482,8 @@ class Funatlas:
             if all_same:
                 load_cached_distributions = True
                 
+        print("USING DF/SIGMA")
+        
         if load_cached_distributions:
             print("p values: Loading cached distributions of ctrl measurements")
             dff = np.loadtxt(cache_file_dff)
@@ -2579,9 +2581,10 @@ class Funatlas:
         return p
         
         
-    def get_kolmogorov_smirnov_p(self,inclall_occ2,nan_th=0.3,
+    def get_kolmogorov_smirnov_p(self,inclall_occ2,nan_th=None,
                                  return_tost=False,tost_th=None,
                                  **kwargs):
+        if nan_th is None: nan_th = self.nan_th
         ctrl_dff, ctrl_dff2, ctrl_sd = self.get_ctrl_distributions(**kwargs)
         
         if return_tost:
@@ -2678,6 +2681,7 @@ class Funatlas:
         else:
             pvalues,_,_ = self.get_kolmogorov_smirnov_p(*args,**kwargs)
         
+        print("pvalues[pvalues==0] = 1e-10")
         pvalues[pvalues==0] = 1e-10
         
         _, q = fdrqvalue(pvalues[np.isfinite(pvalues)]) 

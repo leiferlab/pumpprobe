@@ -154,9 +154,10 @@ ax.bar(x,bars3,alpha=0.5,label="stimulated (req_auto_response=False)")
 ax.bar(x,bars2,alpha=0.5,label="stimulated")
 ax.axhline(1,c='k',alpha=0.3)
 ax.axhline(2,c='k',alpha=0.3)
+ax.axhline(6,c='k',alpha=0.3)
 ax.set_xticks(x)
-ax.set_xticklabels(labels,rotation=90)
-ax.set_yticks(np.append(ax.get_yticks(),[1,2]))
+ax.set_xticklabels(labels,rotation=90,fontsize=6)
+ax.set_yticks(np.append(ax.get_yticks(),[1,2,6]))
 ax.legend()
 plt.tight_layout()
 plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
@@ -178,16 +179,28 @@ ax.bar(x,bars,alpha=0.5,label="observed in n datasets")
 ax.bar(x,bars2,alpha=0.5,label="stimulated n times")
 ax.axhline(1,c='k',alpha=0.3)
 ax.axhline(2,c='k',alpha=0.3)
+ax.axhline(6,c='k',alpha=0.3)
 ax.set_xticks(x)
 ax.set_xticklabels(labels,rotation=90,fontsize=6)
-ax.set_yticks(np.append(ax.get_yticks(),[1,2]))
+ax.set_yticks(np.append(ax.get_yticks(),[1,2,6]))
 ax.set_ylabel("n")
 ax.legend(fontsize=18)
 plt.tight_layout()
 plt.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/"+\
             "neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
 if to_paper:
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
+    np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2_A.txt",np.array([x,bars]))
+    np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2_B.txt",np.array([x,bars2]))
+    f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2.txt","w")
+    f.write("neuron,observed,stimulated\n")
+    s = ""
+    n = len(labels)
+    for i in np.arange(n):
+        s += labels[i]+","+str(bars[i])+","+str(bars2[i])+"\n"
+    s = s[:-1]
+    f.write(s)
+    f.close()
+    ##FIXME plt.savefig(("/projects/LEIFER/francesco/funatlas/figures/paper/figS6/neuron_hist_obs_stim_2.pdf", bbox_inches="tight")
             
 fig = plt.figure(5,figsize=(9,9))
 ax = fig.add_subplot(111)

@@ -3,18 +3,21 @@ import pumpprobe as pp, wormdatamodel as wormdm, wormbrain as wormb
 from scipy import stats
 
 # List of datasets
-fname = "/projects/LEIFER/Sophie/funatla_list_sophie.txt"
+fname = "/projects/LEIFER/francesco/funatlas_list.txt"
 
-file = open(fname, "r")
-nr_of_datasets = sum(1 for line in file)
-file.close()
+#file = open(fname, "r")
+#nr_of_datasets = sum(1 for line in file)
+#file.close()
 
+ds_tags = None
+ds_exclude_tags = "mutant"
 # Read IDs of stimulated neuron (j) and responding neuron (i)
 i = j = ""
 all_pairs = "--all-pairs" in sys.argv
 use_kernels = "--use-kernels" in sys.argv
 merge_LR = "--merge-L-R" in sys.argv
 plots_make = "--make-plots" in sys.argv
+matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 signal = "green"
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
@@ -40,17 +43,18 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True, "smooth_mode": "sg",
                  "photobl_appl":True,}
 
 
+
 # Build Funatlas object
 funatlas = pp.Funatlas.from_datasets(
                 fname,merge_bilateral=merge_LR,merge_dorsoventral=False,
-                merge_numbered=False,signal=signal,signal_kwargs=signal_kwargs)
+                merge_numbered=False,signal=signal,signal_kwargs=signal_kwargs, ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags)
 
-
+nr_of_datasets = len(funatlas.ds_list)
 # Occurence matrix. occ1[i,j] is the number of occurrences of the response of i
 # following a stimulation of j. occ2[i,j] is a dictionary containing details
 # to extract the activities from the signal objects.
-occ1, occ2 = funatlas.get_occurrence_matrix(req_auto_response=True)
-
+occ1, occ2 = funatlas.get_occurrence_matrix(inclall=False, req_auto_response=True)
+occ3 = funatlas.get_observation_matrix_nanthresh(req_auto_response=True)
 #print(occ1)
 
 iids = jids = funatlas.neuron_ids  #gives ids for each global index
@@ -163,7 +167,7 @@ for iid in iids:
 			# ax2.set_xlabel("time (s)")
 			# ax2.set_ylabel("G/R (arb. u.)")
 			# ax2.set_title("Respnse of "+jid+" by stimulation of " + iid)
-			# fig.savefig("/projects/LEIFER/Sophie/comp_Resp_Fig/"+"stim_"+iid+"_resp_"+jid+".png",bbox_inches="tight")
+			# fig.savefig("/projects/LEIFER/Sophie/Comp_Resp_Fig/"+"stim_"+iid+"_resp_"+jid+".png",bbox_inches="tight")
 			# fig.clf()
 			pair_ind = pair_ind + 1
 
@@ -254,7 +258,7 @@ for i in range(pair_ind - 1):
 						plt.ylabel("Kernel/ Response")
 						plt.title("Comparing two responses generated using two kernels between " + stim_neu_id + " and " + resp_neu_id + "with a Correlation Coefficient of " +str(corr_coef_pair1))
 
-						fig1.savefig("/projects/LEIFER/Sophie/comp_Resp_Fig/Comparing_Generated_Responses_High_Corr_"+str(corr_coef_pair1)+"_"+stim_neu_id+"_"+resp_neu_id+".png",
+						fig1.savefig("/projects/LEIFER/Sophie/Comp_Resp_Fig/Comparing_Generated_Responses_High_Corr_"+str(corr_coef_pair1)+"_"+stim_neu_id+"_"+resp_neu_id+".png",
 									 bbox_inches="tight")
 						fig1.clf()
 
@@ -283,7 +287,7 @@ for i in range(pair_ind - 1):
 								corr_coef_pair1))
 
 						fig1.savefig(
-							"/projects/LEIFER/Sophie/comp_Resp_Fig/Comparing_Generated_Responses_Neg_High_Corr_" + str(
+							"/projects/LEIFER/Sophie/Comp_Resp_Fig/Comparing_Generated_Responses_Neg_High_Corr_" + str(
 								corr_coef_pair1) + "_" + stim_neu_id + "_" + resp_neu_id + ".png",
 							bbox_inches="tight")
 						fig1.clf()
@@ -313,7 +317,7 @@ for i in range(pair_ind - 1):
 								corr_coef_pair1))
 
 						fig1.savefig(
-							"/projects/LEIFER/Sophie/comp_Resp_Fig/Comparing_Generated_Responses_Low_Corr_" + str(
+							"/projects/LEIFER/Sophie/Comp_Resp_Fig/Comparing_Generated_Responses_Low_Corr_" + str(
 								corr_coef_pair1) + "_" + stim_neu_id + "_" + resp_neu_id + ".png",
 							bbox_inches="tight")
 						fig1.clf()
@@ -366,17 +370,17 @@ plt.hist(all_comp_resp_corr, bins = 30, alpha = 0.5, density = "True")
 plt.xlabel("Correlation coefficient", fontsize=40)
 plt.ylabel("Density", fontsize=40)
 plt.legend(legend, fontsize=30)
-plt.xticks(np.arange(-1, 1, step=0.5), fontsize= 40)
-plt.yticks(np.arange(0, 1.5, step=0.5), fontsize= 40)
+plt.xticks(np.arange(-1, 1.1, step=0.5), fontsize= 40)
+plt.yticks(np.arange(0, 3.1, step=1.5), fontsize= 40)
 # plt.title("Responses From the Same Pair of Stimulated and Responding Neurons are More Stereotyped than Random", fontsize=16)
 # Density of Correlations Between Responses with the Same Pair of Neurons or Different Pairs of Neurons that have been Generated Using the Same Stimulus and Respective Kernels'
 # fig2.text(.5, 0, txt_capt, ha='center')
 # plt.show()
 '''if merge_LR:
-	fig2.savefig("/projects/LEIFER/Sophie/comp_Resp_Fig/allcorrelations_merged.png",bbox_inches="tight")
+	fig2.savefig("/projects/LEIFER/Sophie/Comp_Resp_Fig/allcorrelations_merged.png",bbox_inches="tight")
 	fig2.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelations_merged.png", bbox_inches="tight")
 else:
-	fig2.savefig("/projects/LEIFER/Sophie/comp_Resp_Fig/allcorrelationsway_notmerged.png", bbox_inches="tight")
+	fig2.savefig("/projects/LEIFER/Sophie/Comp_Resp_Fig/allcorrelationsway_notmerged.png", bbox_inches="tight")
 	fig2.savefig("/projects/LEIFER/francesco/funatlas/diagnostics/allcorrelationsway_notmerged.png", bbox_inches="tight")'''
 fig2.clf()
 

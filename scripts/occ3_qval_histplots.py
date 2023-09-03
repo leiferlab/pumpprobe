@@ -15,7 +15,7 @@ smooth_poly = 1
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
-nan_th = 0.3
+nan_th = pp.Funatlas.nan_th
 save = "--no-save" not in sys.argv
 
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
@@ -63,12 +63,12 @@ occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=re
 # If occ2 needs to be filtered
 occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
                  
-occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=req_auto_response)
 
 if inclall_occ: inclall_occ2 = occ2
 qvalues = funa.get_kolmogorov_smirnov_q(inclall_occ2)
 qvalues_head = funa.reduce_to_head(qvalues)
-qvalues_head = funa.reduce_to_head(qvalues)
+
 # cumulative distribution of the qvalues
 qvalues_flat = qvalues_head.flatten("C")
 fig5 = plt.figure(figsize=(8, 4))
@@ -118,9 +118,11 @@ ax.set_ylabel('Cumulative Density of Pairs',fontsize= 15)
 ax2.set_ylabel('Number of Pairs',fontsize= 15)
 ax.tick_params(axis='both', labelsize= 15)
 ax2.tick_params(axis='y', labelsize= 15)
-plt.xticks(np.arange(0, 0.65, step=0.3), fontsize= 15)
+ax2.set_xticks([0,0.25,0.5])
+#plt.xticks(np.arange(0, np.nanmax(qvalues_flat), step=np.nanmax(qvalues_flat)/2), fontsize= 15)
 #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/QvalueCDF.pdf", bbox_inches='tight')
 plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/QvalueCDF.pdf", bbox_inches='tight')
+
 fig5.clf()
 
 
@@ -163,7 +165,8 @@ ax.yaxis.set_major_locator(ticker.FixedLocator([0,0.5,1]))
 ax2.yaxis.set_major_locator(ticker.FixedLocator([0,end/2,end]))
 ax.spines['top'].set_visible(False)
 ax2.spines['top'].set_visible(False)
-plt.xticks(np.arange(0, 29, step=14), fontsize= 25)
+#plt.xticks(np.arange(0, 29, step=14), fontsize= 25)
+ax.set_xticks([0,30,60])
 ax.set_xlabel('Minimum Number of Observations of a Pair', fontsize= 15)
 ax.set_ylabel('Cumulative Density of Pairs', fontsize= 15)
 ax2.set_ylabel('Number of Pairs', fontsize= 15)

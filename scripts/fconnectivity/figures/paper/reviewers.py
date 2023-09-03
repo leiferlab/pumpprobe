@@ -1,0 +1,3 @@
+python scaling_with_autoresponses.py && python scaling_with_autoresponses_trends.py
+python wt_unc31_timescales_differences.py
+python show_non_asymmetry.py

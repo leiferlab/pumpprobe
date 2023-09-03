@@ -35,6 +35,7 @@ alpha_occ1 = not alpha_qvalues and not alpha_kolmogorov_smirnov and not no_alpha
 alphamax_set = None
 alphamin_set = None
 alphalbl_set = None
+ticklabelsize = 5
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
@@ -59,8 +60,12 @@ for s in sys.argv:
     if sa[0] == "--alpha-max": alphamax_set = float(sa[1])
     if sa[0] == "--alpha-min": alphamin_set = float(sa[1])
     if sa[0] == "--alpha-lbl": alphalbl_set = sa[1]
+    if sa[0] == "--ticklabelsize": ticklabelsize = int(sa[1])
     if sa[0] == "--figsize": figsize = [int(sb) for sb in sa[1].split(",")]
     if sa[0] == "--dst": dst = sa[1]
+
+print("nan_th",nan_th)
+print("ds_exclude_tags",ds_exclude_tags)
 
 # To determine which control distribution to use
 strain = "unc31" if ds_tags == "unc31" else ""
@@ -92,12 +97,13 @@ if export_to_txt:
         funa.export_to_txt("/projects/LEIFER/francesco/funatlas/exported_data_unc31/")
     elif ds_tags is None and ds_exclude_tags=="mutant":
         funa.export_to_txt("/projects/LEIFER/francesco/funatlas/exported_data/")
+    quit()
 
 occ1, occ2 = funa.get_occurrence_matrix(inclall=inclall_occ,req_auto_response=req_auto_response)
 # If occ2 needs to be filtered
-occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
+#occ1,occ2 = funa.filter_occ12_from_sysargv(occ2,sys.argv)
                  
-occ3 = funa.get_observation_matrix(req_auto_response=req_auto_response)
+occ3 = funa.get_observation_matrix_nanthresh(req_auto_response=req_auto_response)
 occ3_full = np.copy(occ3)
 
 # Setting the transparency of the imshows
@@ -179,7 +185,8 @@ for ai in np.arange(funa.n_neurons):
                                          normalize="none")[:,i]
             nan_mask = funa.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
                                          
-            if np.sum(nan_mask)>nan_th*len(y): continue
+            #if np.sum(nan_mask)>nan_th*len(y): continue
+            #if not pp.Fconn.nan_ok(nan_mask,nan_th*len(y)): continue
                                          
             if signal_range is None:
                 pre = np.average(y[:shift_vol])                                 
@@ -259,15 +266,16 @@ if plot:
     ax.set_xticks(np.arange(len(sorter_j)))
     ax.set_yticks(np.arange(len(sorter_i)))
     if SIM:
-        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=6,rotation=90)
-        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=6)
+        ax.set_xticklabels(funa.SIM_head_ids[sorter_j],fontsize=ticklabelsize,rotation=90) # ticklabelsize was 6
+        ax.set_yticklabels(funa.SIM_head_ids[sorter_i],fontsize=ticklabelsize)
     else:
-        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=6,rotation=90)
-        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=6)
+        ax.set_xticklabels(funa.head_ids[sorter_j],fontsize=ticklabelsize,rotation=90)
+        ax.set_yticklabels(funa.head_ids[sorter_i],fontsize=ticklabelsize)
     ax.tick_params(axis="x", bottom=True, top=True, labelbottom=True, labeltop=True)
     ax.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True)
     ax.set_xlim(-0.5,lim+0.5)
     if stamp: pp.provstamp(ax,-.1,-.1," ".join(sys.argv))
+
 
 if plot: plt.tight_layout()
 folder='/projects/LEIFER/francesco/funatlas/'
@@ -293,6 +301,19 @@ if dst is not None:
         f = open(dst+"command_used.txt","w")
     f.write(" ".join(sys.argv))
     f.close()
+    
+    f = open(dst+"funatlas_intensity_map_for_figure_csv.txt","w")
+    if SIM:
+        ll_ = funa.SIM_head_ids
+    else:
+        ll_ = funa.head_ids
+    f.write(","+",".join(ll_[sorter_j]))
+    s = ""
+    for i in np.arange(mappa.shape[0]):
+        s += ll_[sorter_i][i]+","+",".join(mappa[i].astype(str))
+    s = s[:-1]
+    f.write(s)
+    
 if save_cache:
     if ds_tags=="unc31":
         add_file_name = "_unc31"

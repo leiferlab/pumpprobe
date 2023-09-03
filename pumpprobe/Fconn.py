@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 
 class Fconn:
     '''Class representing the functional connectome extracted from a dataset.'''
+    
+    nan_thresh = 0.05
+    '''Global nan threshold'''
 
     folder = ""
     "Folder containing the dataset"
@@ -134,8 +137,9 @@ class Fconn:
     @classmethod
     def from_objects(cls, rec, brains, signal, 
                      delta_t_pre, 
-                     nan_thresh=0.3, deriv_thresh=1.0, ampl_thresh=1.0,
+                     nan_thresh=None, deriv_thresh=1.0, ampl_thresh=1.0,
                      deriv_min_time=2.0, ampl_min_time=5.,
+                     matchless_autoresponse=False,
                      verbose=True):
         '''Creates an instance of a Fconn object from the recording, Brains, and
         Signal objects of the dataset.
@@ -157,6 +161,7 @@ class Fconn:
             Instance of the class.
         
         '''
+        if nan_thresh is None: nan_thresh = cls.nan_thresh
         events = rec.get_events()
         brains.load_matches(rec.folder)
         
@@ -190,7 +195,9 @@ class Fconn:
             while brains.nInVolume[ee] == 0: ee = ee - 1; delta_ee -= 1
             if delta_ee>0: print("Targeted brain empty, shifted by",str(delta_ee))
             target_coords = events['optogenetics']['properties']['target'][ie]
-            target_index = brains.get_closest_neuron(ee,target_coords,coord_ordering="xyz",z_true=True,inverse_match=False) 
+            #target_index = brains.get_closest_neuron(ee,target_coords,coord_ordering="xyz",z_true=True,inverse_match=False)
+            target_index_ref = brains.get_closest_neuron(ee,target_coords,coord_ordering="xyz",z_true=True,inverse_match=True)
+            '''
             ieshifts = 5
             target_index_refs = []
             for ieshift in np.arange(ieshifts):
@@ -202,7 +209,7 @@ class Fconn:
                 target_index_ref = np.unique(target_index_refs)[-1]
             else:
                 target_index_ref = -1
-                
+            '''    
             inst.stim_indices[ie] = ee
             inst.stim_neurons[ie] = target_index_ref
         
@@ -218,6 +225,7 @@ class Fconn:
         
         set_shift_vol = shift_vol
         old_selected_ = np.zeros(signal.data.shape[1],dtype=bool)
+        inst.nan_selection_autoresponse_bypassed = np.zeros(n_stim,dtype=bool)
         
         #Prepare second derivative
         #sderker = savgol_coeffs(13, 2, deriv=2, delta=inst.Dt)
@@ -254,8 +262,14 @@ class Fconn:
             
             ## Select responding neurons
             ##
+            # OLD: noncontiguous condition
             # The traces should have a limited number of nans originally
-            nan_selection = np.sum(nan_mask,axis=0) < nan_thresh*(i1-i0)
+            #nan_selection = np.sum(nan_mask,axis=0) < nan_thresh*(i1-i0)
+            # The traces should not have contiguous nan regions longer than
+            # a given fraction of the interval.
+            nan_selection = np.zeros(n_neurons,dtype=bool)
+            for i_neu in np.arange(n_neurons):
+                nan_selection[i_neu] = cls.nan_ok(nan_mask[:,i_neu],nan_thresh*(i1-i0))
             
             # There needs to be a sufficient increase in the derivative
             # at least for a given amount of time
@@ -380,7 +394,7 @@ class Fconn:
                     contcond1b2 = np.diff(np.where(np.concatenate(([condition1b2[0]],
                                              condition1b2[:-1] != condition1b2[1:],
                                              [True])))[0])[::2]
-                    ampl_selection1b2[i_neu] = np.max(contcond1b2)>2*ampl_min_vols  
+                    ampl_selection1b2[i_neu] = np.max(contcond1b2)>2*ampl_min_vols
                 else:
                     ampl_selection1b2[i_neu] = False
                 
@@ -474,7 +488,6 @@ class Fconn:
                     
                 if not post_snr_ok:
                     ampl_selection2[i_neu] = False
-                    
                     
             ampl_selection = np.logical_or(ampl_selection1,ampl_selection2)
             # Old criterion
@@ -1600,11 +1613,11 @@ class Fconn:
                 n_in_prev = np.append(n_in_prev,i+1)
                 p_prev = p_cur_b
         
-        #special_idx = np.append(0,np.cumsum(n_in_prev))
-        #for j in special_idx[:-1]:
+        special_idx = np.append(0,np.cumsum(n_in_prev))
+        for j in special_idx[:-1]:
             #FIXME BE CAREFUL WITH THIS. IF YOU HAVE REJOINING OF BRANCHES, IT
             # IS NOT GOING TO BEHAVE WELL!
-        #    p_prev[j] *= y_norm/stim_norm
+            p_prev[j] *= y_norm/stim_norm
             
         gc.collect()
             
@@ -1723,3 +1736,26 @@ class Fconn:
 
         
         return y   
+        
+    @staticmethod
+    def contiguously_satisfied(condition,n):
+        if np.any(condition):
+            contcond = np.diff(np.where(np.concatenate(([condition[0]],
+                                        condition[:-1] != condition[1:],
+                                        [True])))[0])[::2]
+            return np.max(contcond)>n
+        else:
+            return False
+    
+    @classmethod
+    def nan_ok(cls,a,n):
+        if len(a.shape)==1:
+            return not cls.contiguously_satisfied(a>0.5,n)
+        elif len(a.shape)==2:
+            ok = np.zeros(a.shape[1])
+            for i in np.arange(a.shape[1]):
+                ok[i] = not cls.contiguously_satisfied(a[:,i]>0.5,n)
+            return ok
+        else:
+            raise ValueError("nan_ok max dimensionality is 2")
+            

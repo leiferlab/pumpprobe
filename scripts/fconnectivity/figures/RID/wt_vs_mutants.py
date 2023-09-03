@@ -41,14 +41,14 @@ signal_kwargs = {"remove_spikes": True,  "smooth": True,
 funa_wt = pp.Funatlas.from_datasets(
                 ds_list,merge_bilateral=merge_bilateral,merge_dorsoventral=False,
                 merge_numbered=True,merge_AWC=True,
-                ds_exclude_tags="mutant", #ds_tags="D20",
-                signal_kwargs=signal_kwargs)
+                ds_exclude_tags="mutant", #ds_tags="D20", 
+                signal="green",signal_kwargs=signal_kwargs)
                 
 funa_unc31 = pp.Funatlas.from_datasets(
                 ds_list,merge_bilateral=merge_bilateral,merge_dorsoventral=False,
                 merge_numbered=True,merge_AWC=True,
                 ds_tags="unc31",
-                signal_kwargs=signal_kwargs)
+                signal="green",signal_kwargs=signal_kwargs)
                 
 _, occ2_wt = funa_wt.get_occurrence_matrix(inclall=inclall)
 _, occ2_unc31 = funa_unc31.get_occurrence_matrix(inclall=inclall)
@@ -57,23 +57,7 @@ ai_RID = funa_wt.ids_to_i(jid)
 ai_i = funa_wt.ids_to_i(iid)
 
 t = np.linspace(-10,30,120)
-#t = np.linspace(-20,60,120)
 t0 = np.argmin(np.abs(t-0))
-
-'''resp_wt = np.zeros((len(occ2_wt[ai_i,ai_RID]),len(t)))
-resp_unc31 = np.zeros((len(occ2_unc31[ai_i,ai_RID]),len(t)))
-
-peak_t_wt = np.zeros(len(occ2_wt[ai_i,ai_RID]))
-peak_t_unc31 = np.zeros(len(occ2_unc31[ai_i,ai_RID]))
-
-max_wt = np.zeros(len(occ2_wt[ai_i,ai_RID]))
-max_unc31 = np.zeros(len(occ2_unc31[ai_i,ai_RID]))
-
-min_wt = np.zeros(len(occ2_wt[ai_i,ai_RID]))
-min_unc31 = np.zeros(len(occ2_unc31[ai_i,ai_RID]))
-
-avg_wt = np.zeros(len(occ2_wt[ai_i,ai_RID]))
-avg_unc31 = np.zeros(len(occ2_unc31[ai_i,ai_RID]))'''
 
 resp_wt = []
 resp_unc31 = []
@@ -90,6 +74,7 @@ min_unc31 = []
 avg_wt = []
 avg_unc31 = []
 
+
 for io in np.arange(len(occ2_wt[ai_i,ai_RID])):
     o = occ2_wt[ai_i,ai_RID][io]
     ds = o["ds"]
@@ -99,40 +84,23 @@ for io in np.arange(len(occ2_wt[ai_i,ai_RID])):
     time,time2,i0,i1 = funa_wt.fconn[ds].get_time_axis(ie,True)
     shift_vol = funa_wt.fconn[ds].shift_vols[ie]
     
-    seg = funa_wt.sig[ds].get_segment(
-                                i0,i1,shift_vol,
-                                baseline=False,normalize="")[:,i]
-    nan = funa_wt.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
+    y = funa_wt.sig[ds].get_segment(i0,i1,baseline=False,
+                                         normalize="none")[:,i]
+    nan_mask = funa_wt.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
+    
+    pre = np.average(y[:shift_vol])
+    y = (y-pre)/pre
+    
+    if np.max(y)>2:continue
                                 
-    baseline = np.nanmean(seg[shift_vol//2:shift_vol])
-    y = (seg-baseline)
-    if relative:
-        y = y/baseline
-        
-    if (ds==41 and ie==50 and i == 93): #extremely noisy segment that is not smoothed for some reason 
-        alt_y = funa_wt.sig[ds].get_smoothed(13, i=93, poly=1, mode="sg_causal")
-        alt_y = alt_y[i0:i1]
-        baseline = np.nanmean(alt_y[:shift_vol])#shift_vol//2:
-        y = alt_y-baseline
-        if relative:
-            y = y/baseline
-    
-    if np.sum(nan)<0.3*len(nan) : 
-    
-        '''max_wt[io] = np.nanmax(y[shift_vol:])
-        min_wt[io] = np.nanmin(y[shift_vol:])
-        avg_wt[io] = np.nanmean(y[shift_vol:])
-        peak_t_wt[io] = np.nanargmax((y[shift_vol:]))
-        
-        resp_wt[io] = np.interp(t,time,y)'''
-        
-        max_wt.append(np.nanmax(y[shift_vol:]))
-        min_wt.append(np.nanmin(y[shift_vol:]))
-        avg_wt.append(np.nanmean(y[shift_vol:shift_vol+40]))
-        peak_t_wt.append(np.nanargmax((y[shift_vol:])))
+    if pp.Fconn.nan_ok(nan_mask,pp.Funatlas.nan_th*len(nan_mask)):
+        max_wt.append(np.nanmax(y))
+        min_wt.append(np.nanmin(y))
+        avg_wt.append(np.nanmean(y))
+        peak_t_wt.append(np.nanargmax((y)))
         
         resp_wt.append(np.interp(t,time,y))
-        
+
 resp_wt = np.array(resp_wt)
     
 if sort_max:
@@ -153,29 +121,18 @@ for io in np.arange(len(occ2_unc31[ai_i,ai_RID])):
     time,time2,i0,i1 = funa_unc31.fconn[ds].get_time_axis(ie,True)
     shift_vol = funa_unc31.fconn[ds].shift_vols[ie]
     
-    seg = funa_unc31.sig[ds].get_segment(
-                                i0,i1,shift_vol,
-                                baseline=False,normalize="")[:,i]
-    nan = funa_unc31.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
-                                
-    baseline = np.nanmean(seg[:shift_vol])#shift_vol//2:
-    y = (seg-baseline)
-    if relative:
-        y = y/baseline
+    y = funa_unc31.sig[ds].get_segment(i0,i1,baseline=False,
+                                         normalize="none")[:,i]
+    nan_mask = funa_unc31.sig[ds].get_segment_nan_mask(i0,i1)[:,i]
     
-    if np.sum(nan)<0.3*len(nan):# or True: #FIXME FIXME FIXME
+    pre = np.average(y[:shift_vol])
+    y = (y-pre)/pre
     
-        '''max_unc31[io] = np.nanmax(y[shift_vol:])
-        min_unc31[io] = np.nanmin(y[shift_vol:])
-        avg_unc31[io] = np.nanmean(y[shift_vol:])
-        peak_t_unc31[io] = np.nanargmax((y[shift_vol:]))
-            
-        resp_unc31[io] = np.interp(t,time,y)'''
-        
-        max_unc31.append(np.nanmax(y[shift_vol:]))
-        min_unc31.append(np.nanmin(y[shift_vol:]))
-        avg_unc31.append(np.nanmean(y[shift_vol:shift_vol+40]))
-        peak_t_unc31.append(np.nanargmax((y[shift_vol:])))
+    if pp.Fconn.nan_ok(nan_mask,pp.Funatlas.nan_th*len(nan_mask)):
+        max_unc31.append(np.nanmax(y))
+        min_unc31.append(np.nanmin(y))
+        avg_unc31.append(np.nanmean(y))
+        peak_t_unc31.append(np.nanargmax((y)))
             
         resp_unc31.append(np.interp(t,time,y))
         
@@ -190,7 +147,7 @@ elif sort_min:
 elif sort_avg:
     resp_unc31 = resp_unc31[np.argsort(avg_unc31)[::-1]]
 
-if not relative or True:
+if not relative:
     print("Bypassing vmax")
     max1 = np.sort(np.ravel(np.abs(resp_wt)))[-20]
     max2 = np.sort(np.ravel(np.abs(resp_unc31)))[-20]
@@ -301,4 +258,3 @@ fig.savefig("/projects/LEIFER/francesco/funatlas/figures/RID/"+jid+"->"+iid+".sv
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/RID/"+jid+"->"+iid+".png",bbox_inches="tight",dpi=300)
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/"+jid+"->"+iid+".png",bbox_inches="tight",dpi=300)
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/"+jid+"->"+iid+".pdf",bbox_inches="tight",dpi=300)
-#plt.show()

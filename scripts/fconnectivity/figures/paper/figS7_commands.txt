@@ -1,1 +1,5 @@
 python funatlas_plot_intensity_map.py --no-merge-bilateral --inclall-occ --req-auto-response --ds-exclude-tags:none --ds-tags:unc31 --alpha-kolmogorov-smirnov --alpha-max:1. --alpha-min:0.5 --no-stamp --pop-nans --figsize:12,10 --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --cmap:Spectral_r --dst:<destination file with _unc31 suffix (will replace another figure otherwise)> --nan-th:0.05
+
+python scripts/fconnectivity/figures/compare_connectomes/qvalues_wt_unc31.py --matchless-nan-th:0.5 --matchless-nan-th-added-only
+
+python scripts/fconnectivity/figures/RID/RID_bar_wt_vs_unc31.py --matchless-nan-th:0.5

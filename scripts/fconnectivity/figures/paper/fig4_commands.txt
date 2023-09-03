@@ -1,4 +1,4 @@
 python scripts/fconnectivity/figures/RID/actconn_RID_vs_all.py
 python scripts/fconnectivity/figures/RID/wt_vs_mutants.py --i:URXL --inclall-occ --relative --sort-avg --matchless-nan-th:0.5
 python scripts/fconnectivity/figures/RID/wt_vs_mutants.py --i:ADLR --inclall-occ --relative --sort-avg --matchless-nan-th:0.5
-python scripts/fconnectivity/figures/RID/wt_vs_mutants.py --i:AWBL --inclall-occ --relative --sort-avg --matchless-nan-th:0.5
+python scripts/fconnectivity/figures/RID/wt_vs_mutants.py --i:AWBR --inclall-occ --relative --sort-avg --matchless-nan-th:0.5

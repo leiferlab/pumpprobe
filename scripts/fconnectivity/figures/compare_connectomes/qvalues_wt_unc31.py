@@ -46,6 +46,10 @@ _,inclall_occ2_unc31 = funa_unc31.get_occurrence_matrix(req_auto_response=True,i
 #q_unc31 =  funa_unc31.get_kolmogorov_smirnov_q(inclall_occ2_unc31,strain="unc31") 
 q_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q.txt")
 q_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q_unc31.txt")
+print("##############\nONLY LIMITED TO PAIRS PRESENT BOTH IN WT AND UNC31\n##############\n")
+excl = np.logical_or(np.isnan(q_wt),np.isnan(q_unc31))
+q_wt[excl] = np.nan
+q_unc31[excl] = np.nan
 
 fig = plt.figure(1,figsize=(4,3))
 ax = fig.add_subplot(111)
@@ -63,8 +67,8 @@ ax.legend()
 fig.tight_layout()
 if save:
     fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/qvalues_wt_unc31.png",dpi=300,bbox_inches="tight")
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31.png",dpi=300,bbox_inches="tight")
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31.pdf",bbox_inches="tight")
+    #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31.png",dpi=300,bbox_inches="tight")
+    #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31.pdf",bbox_inches="tight")
 
 fig = plt.figure(2,figsize=(4,3))
 ax = fig.add_subplot(111)
@@ -80,9 +84,12 @@ ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 fig.tight_layout()
 if save:
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/qvalues_wt_unc31_bars.png",dpi=300,bbox_inches="tight")
+    f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS14/qvalues_wt_unc31_bars.txt","w")
+    f.write("wt,unc31\n"+str(a)+","+str(b))
+    f.close()
+    #FIXME fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/qvalues_wt_unc31_bars.png",dpi=300,bbox_inches="tight")
     #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31_bars.png",dpi=300,bbox_inches="tight")
     #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig4/qvalues_wt_unc31_bars.pdf",bbox_inches="tight")
-    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_wt_unc31/qvalues_wt_unc31_bars.pdf",bbox_inches="tight")
+    #FIXME fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS14/qvalues_wt_unc31_bars.pdf",bbox_inches="tight")
 
 plt.show()

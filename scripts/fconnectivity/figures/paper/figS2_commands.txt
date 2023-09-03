@@ -1,5 +1,13 @@
-python scripts/plot_photobleaching_2d_frame_comparison.py --folder-1:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_144449/ --folder-2:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_142857/ --volumes-1:1,110 --volumes-2:1,70 --xlim:150,330 --ylim:145,310 --inset-limits-1:235,265,170,200 --inset-limits-2:220,250,200,230 --dz-from-logbook-um:8.5
-python scripts/fconnectivity/figures/2Pspotcharacterization/off_target_z.py --to-paper
-python scripts/AFD_AIY_2_fr.py
-python scripts/DistanceFigure2.py --inclall-occ --req-auto-response --no-merge-bilateral --ds-exclude-tags:mutant --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --nan-th:0.05
+python scripts/fconnectivity/figures/2Pspotcharacterization/plot_spot_sections.py --to-paper 
 
+python scripts/fconnectivity/figures/gur-3/gur3_exc.py --to-paper
+
+python scripts/plot_photobleaching_2d_frame_comparison.py --folder-1:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_144449/ --folder-2:/projects/LEIFER/francesco/pumpprobe/instrument_characterization/RFP_selective_bleaching_non_saturated/20210421/pumpprobe_20210421_142857/ --volumes-1:1,110 --volumes-2:1,70 --xlim:150,330 --ylim:145,310 --inset-limits-1:235,265,170,200 --inset-limits-2:220,250,200,230 --dz-from-logbook-um:8.5
+
+python scripts/fconnectivity/figures/2Pspotcharacterization/off_target_z.py --to-paper
+
+python scripts/fconnectivity/preliminary_scripts/wt_unc31_compare_autoresponses.py
+
+python scripts/AFD_AIY_2_fr.py
+
+python scripts/DistanceFigure2.py --inclall-occ --req-auto-response --no-merge-bilateral --ds-exclude-tags:mutant --matchless-nan-th:0.5 --matchless-nan-th-added-only --correct-decaying --nan-th:0.05

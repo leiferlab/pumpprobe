@@ -8,19 +8,24 @@ ds_tags = None if not unc31 else "unc31"
 ds_exclude_tags = "mutant" if not unc31 else None
 
 ds_list = "/projects/LEIFER/francesco/funatlas_list.txt"
-                  
+
 signal_kwargs = {"remove_spikes": True,  "smooth": True, 
                  "smooth_mode": "sg_causal", 
-                 "smooth_n": 13, "smooth_poly": 1,
-                 "photobl_appl":True,            
-                 "matchless_nan_th_from_file": True}
-                 
+                 "smooth_n": 13, "smooth_poly": 1,          
+                 "photobl_appl":True,
+                 "matchless_nan_th_from_file": False,
+                 "matchless_nan_th": 0.5,
+                 "matchless_nan_th_added_only": True}
 
-# Load Funatlas for actual data
-funa = pp.Funatlas.from_datasets(ds_list,merge_bilateral=False,signal="green",
-                                 signal_kwargs = signal_kwargs,
-                                 enforce_stim_crosscheck=True,
-                                 ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags,)
+funa = pp.Funatlas.from_datasets(
+                ds_list,
+                merge_bilateral=False,
+                merge_dorsoventral=False,
+                merge_numbered=False,signal="green",
+                signal_kwargs=signal_kwargs,
+                ds_tags=ds_tags,ds_exclude_tags=ds_exclude_tags,
+                enforce_stim_crosscheck=False,
+                verbose=False)
 
 occ1,occ2 = funa.get_occurrence_matrix(req_auto_response=True)
 occ3 = funa.get_observation_matrix(req_auto_response=True)

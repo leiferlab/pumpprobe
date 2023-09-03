@@ -5,7 +5,7 @@ plt.rc("xtick",labelsize=14)
 plt.rc("ytick",labelsize=14)
 plt.rc("axes",labelsize=14)
 
-top_n_opt = 14
+top_n_opt = 9#14
 merge = "--no-merge" not in sys.argv
 print("merge:",merge)
 to_paper = "--to-paper" in sys.argv
@@ -59,7 +59,11 @@ spontcorr = funa_spont.get_signal_correlations()
 occ1,occ2 = funa.get_occurrence_matrix(req_auto_response=True)
 occ3 = funa.get_observation_matrix(req_auto_response=True)
 _,inclall_occ2 = funa.get_occurrence_matrix(req_auto_response=True,inclall=True)
-q,p = funa.get_kolmogorov_smirnov_q(inclall_occ2,return_p=True,strain=strain)
+#q,p = funa.get_kolmogorov_smirnov_q(inclall_occ2,return_p=True,strain=strain)
+if not unc31:
+    q = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q.txt")
+else:
+    q = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q_unc31.txt")
 
 # Prepare array to exclude elements on the diagonal
 ondiag = np.zeros_like(q,dtype=bool)
@@ -148,7 +152,7 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 fig.tight_layout()
                 if not unc31:
                     fig.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.png",dpi=300,bbox_inches="tight")
-                    fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.pdf",bbox_inches="tight")
+                    #fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_vs_spont_scatter.pdf",bbox_inches="tight")
                 
                 fig22 = plt.figure(22)
                 ax = fig22.add_subplot(111)
@@ -159,9 +163,9 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 fig22.tight_layout()
                 if not unc31:
                     fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel.png",dpi=300,bbox_inches="tight")
-                    fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel.pdf",bbox_inches="tight")
+                    #fig22.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel.pdf",bbox_inches="tight")
                 
-                fig23 = plt.figure(23)
+                '''fig23 = plt.figure(23)
                 ax = fig23.add_subplot(111)
                 ax.set_facecolor((0.4,0.4,0.4))
                 #ctnplot = funa_spont.reduce_to_head(ck_top_neurons)
@@ -175,6 +179,7 @@ for shuffle_k_i in np.arange(shuffle_k_n+1):
                 if not unc31:
                     fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/compare_connectomes/funatlas_vs_correlations_opt_corr_kernel_sorter.png",dpi=300,bbox_inches="tight")
                     fig23.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS3/funatlas_vs_correlations_opt_corr_kernel_sorted.pdf",bbox_inches="tight")
+                '''
                 
     if shuffle_k:
         shuffled_k_r.append(all_top_neurons_r_spontcorr_ck)

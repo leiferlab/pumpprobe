@@ -20,10 +20,11 @@ smooth_poly = 1
 matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
-nan_th = 0.3
+nan_th = pp.Funatlas.nan_th
 save = "--no-save" not in sys.argv
 two_min_occ = "--two-min-occ" in sys.argv
 figsize = (12,10)
+
 enforce_stim_crosscheck = "--enforce-stim-crosscheck" in sys.argv
 merge_bilateral = "--no-merge-bilateral" not in sys.argv
 req_auto_response = "--req-auto-response" in sys.argv
@@ -155,6 +156,7 @@ else:
 occ1_notinclall, occ2_notinclall = funa.get_occurrence_matrix(inclall=False,req_auto_response=req_auto_response)
 cmap = cmr.get_sub_cmap('Purples', 0.2, 1.0)
 fraction_respond = occ1_notinclall/occ3
+
 if SIM:
     fraction_respond_head = funa.reduce_to_SIM_head(fraction_respond)
 else:
@@ -195,10 +197,19 @@ ax2.tick_params(axis="y", left=True, right=True, labelleft=True, labelright=True
 ax2.set_xlim(-0.5, lim)
 if merge_bilateral:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/fraction_responding_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/fraction_responding_merged.pdf")
 else:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/fraction_responding_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/fraction_responding_unmerged.pdf")
+    #np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/fraction_responding_unmerged.txt",fraction_respond_head)
+    f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/fraction_responding_unmerged.txt","w")
+    f.write(",".join(funa.head_ids[sorter_j])+"\n")
+    s = ""
+    for i in np.arange(fraction_respond_head.shape[0]):
+        s += funa.head_ids[sorter_i][i]+","+",".join(fraction_respond_head[i].astype(str))+"\n"
+    s = s[:-1]
+    f.write(s)
+    f.close()
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/fraction_responding_unmerged.pdf")
 fig2.clf()
 
 if SIM:
@@ -267,12 +278,20 @@ ax.set_xlim(-0.5, lim)
 if stamp: pp.provstamp(ax,-.1,-.1," ".join(sys.argv))
 if merge_bilateral:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_merged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/variability_merged.pdf")
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/variability_merged.pdf")
 else:
     #plt.savefig("/projects/LEIFER/Sophie/Figures/Robustness/variability_unmerged.pdf")
-    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS9/variability_unmerged.pdf")
+    #np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/variability_unmerged.txt",variability_matrix_head)
+    f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/variability_unmerged.txt","w")
+    f.write(",".join(funa.head_ids[sorter_j])+"\n")
+    s = ""
+    for i in np.arange(variability_matrix_head.shape[0]):
+        s += funa.head_ids[sorter_i][i]+","+",".join(variability_matrix_head[i].astype(str))+"\n"
+    s = s[:-1]
+    f.write(s)
+    f.close()
+    plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS5/variability_unmerged.pdf")
 fig1.clf()
 
 
 
-print("done")

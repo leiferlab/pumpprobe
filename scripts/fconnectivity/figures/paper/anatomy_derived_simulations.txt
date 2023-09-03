@@ -1,0 +1,3 @@
+python dyson_steady_state.py
+python kunert4_inverted_f.py 5e-10
+python compile_activity_connectome.py --no-merge --inverted

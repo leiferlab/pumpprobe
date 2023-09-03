@@ -19,33 +19,49 @@ funa.load_aconnectome_from_file(chem_th=0,gap_th=0)
 
 aconn = funa.aconn_chem + funa.aconn_gap
 actconn = np.loadtxt("/projects/LEIFER/francesco/simulations/activity_connectome_sign2/activity_connectome_no_merge.txt")
+actconn_ph = funa.reduce_to_pharynx(actconn)
 actconn_fit_wt = np.loadtxt("/projects/LEIFER/francesco/simulations/activity_connectome_sign2_inverted/activity_connectome_no_merge.txt")
+actconn_fit_wt_ph = funa.reduce_to_pharynx(actconn_fit_wt)
 actconn_fit_unc31 = np.loadtxt("/projects/LEIFER/francesco/simulations/activity_connectome_sign2_inverted_unc31/activity_connectome_no_merge.txt")
+actconn_fit_unc31_ph = funa.reduce_to_pharynx(actconn_fit_unc31)
 
 intensity_map_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache.txt")
 occ3_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_occ3.txt")
 q_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q.txt")
 tost_q_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_tost_q.txt")
+intensity_map_wt_ph = funa.reduce_to_pharynx(intensity_map_wt)
+q_wt_ph = funa.reduce_to_pharynx(q_wt)
+tost_q_wt_ph = funa.reduce_to_pharynx(tost_q_wt)
 intensity_map_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_unc31.txt")
 occ3_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_occ3_unc31.txt")
 q_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q_unc31.txt")
 tost_q_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_tost_q_unc31.txt")
+intensity_map_unc31_ph = funa.reduce_to_pharynx(intensity_map_unc31)
+q_unc31_ph = funa.reduce_to_pharynx(q_unc31)
+tost_q_unc31_ph = funa.reduce_to_pharynx(tost_q_unc31)
 
 occ1slowbool = np.loadtxt("/projects/LEIFER/francesco/funatlas/occ1slowbool.txt")
 
 in_wt = q_wt<0.05
 not_in_wt = tost_q_wt<0.05
+in_wt_ph = q_wt_ph<0.05
 in_unc31 = q_unc31<0.05
 not_in_unc31 = tost_q_unc31<0.05
+in_unc31_ph = q_unc31_ph<0.05
 ondiag = np.zeros_like(q_wt,dtype=bool); np.fill_diagonal(ondiag,True)
 
-excl_wt = np.logical_or(np.isnan(q_wt),ondiag)
-excl_unc31 = np.logical_or(np.isnan(q_unc31),ondiag)
+excl_wt = np.logical_or(np.logical_or(np.isnan(q_wt),np.isnan(intensity_map_wt)),ondiag)
+excl_wt_ph = funa.reduce_to_pharynx(excl_wt)
+excl_unc31 = np.logical_or(np.logical_or(np.isnan(q_unc31),np.isnan(intensity_map_unc31)),ondiag)
+excl_unc31_ph = funa.reduce_to_pharynx(excl_unc31)
+
+#excl_joint = np.logical_or(excl_wt,excl_unc31)
+#excl_joint_ph = funa.reduce_to_pharynx(excl_joint)
 
 # Compute the significance of the difference between the distributions of dF/F
 # for actconn above and below this threshold (determined empirically looking at
 # the plot)
-split_distr_th = 0.1
+split_distr_th = 0.1#3e-4
 
 dff1 = intensity_map_wt[np.logical_and(actconn<split_distr_th,~np.isnan(q_wt))]
 dff2 = intensity_map_wt[np.logical_and(actconn>=split_distr_th,~np.isnan(q_wt))]
@@ -65,10 +81,12 @@ print("p of CDF actconn1 being greater than CDF actconn2", p)
 #####################################################
 # WT
 r_fconn_actconn_wt = np.corrcoef(actconn[~excl_wt],intensity_map_wt[~excl_wt])[0,1]
+r_fconn_actconn_ph_wt = np.corrcoef(actconn_ph[~excl_wt_ph],intensity_map_wt_ph[~excl_wt_ph])[0,1]
 r_fconn_actconn_split_distr_wt = np.corrcoef(actconn[np.logical_and(actconn>split_distr_th,~excl_wt)],intensity_map_wt[np.logical_and(actconn>split_distr_th,~excl_wt)])[0,1]
 r_fconn_actconn_fit_wt = np.corrcoef(actconn_fit_wt[~excl_wt],intensity_map_wt[~excl_wt])[0,1]
 # Fit with intercept 0
 R2_fconn_actconn_wt = pp.R2(actconn[~excl_wt],intensity_map_wt[~excl_wt])
+R2_fconn_actconn_ph_wt = pp.R2(actconn_ph[~excl_wt_ph],intensity_map_wt_ph[~excl_wt_ph])
 R2_fconn_actconn_split_distr_wt = pp.R2(actconn[np.logical_and(actconn>split_distr_th,~excl_wt)],intensity_map_wt[np.logical_and(actconn>split_distr_th,~excl_wt)])
 R2_fconn_actconn_fit_wt = pp.R2(actconn_fit_wt[~excl_wt],intensity_map_wt[~excl_wt])
 
@@ -79,9 +97,11 @@ R2_fconn_actconn_fit_wt_fast = pp.R2(actconn_fit_wt[~excl_fastslow_wt],intensity
 
 print("### wt")
 print("r_fconn_actconn_wt",r_fconn_actconn_wt)
+print("r_fconn_actconn_ph_wt",r_fconn_actconn_ph_wt)
 print("r_fconn_actconn_split_distr_wt",r_fconn_actconn_split_distr_wt)
 print("r_fconn_actconn_fit_wt",r_fconn_actconn_fit_wt)
 print("R2_fconn_actconn_wt",R2_fconn_actconn_wt)
+print("R2_fconn_actconn_ph_wt",R2_fconn_actconn_ph_wt)
 print("R2_fconn_actconn_split_distr_wt",R2_fconn_actconn_split_distr_wt)
 print("R2_fconn_actconn_fit_wt",R2_fconn_actconn_fit_wt)
 print("R2_fconn_actconn_wt_fast",R2_fconn_actconn_wt_fast)
@@ -89,10 +109,12 @@ print("R2_fconn_actconn_fit_wt_fast",R2_fconn_actconn_fit_wt_fast)
 
 # unc31
 r_fconn_actconn_unc31 = np.corrcoef(actconn[~excl_unc31],intensity_map_unc31[~excl_unc31])[0,1]
+r_fconn_actconn_ph_unc31 = np.corrcoef(actconn_ph[~excl_unc31_ph],intensity_map_unc31_ph[~excl_unc31_ph])[0,1]
 r_fconn_actconn_split_distr_unc31 = np.corrcoef(actconn[np.logical_and(actconn>split_distr_th,~excl_unc31)],intensity_map_unc31[np.logical_and(actconn>split_distr_th,~excl_unc31)])[0,1]
 r_fconn_actconn_fit_unc31 = np.corrcoef(actconn_fit_unc31[~excl_unc31],intensity_map_unc31[~excl_unc31])[0,1]
 # Fit with intercept 0
 R2_fconn_actconn_unc31 = pp.R2(actconn[~excl_unc31],intensity_map_unc31[~excl_unc31])
+R2_fconn_actconn_ph_unc31 = pp.R2(actconn_ph[~excl_unc31_ph],intensity_map_unc31_ph[~excl_unc31_ph])
 R2_fconn_actconn_split_distr_unc31 = pp.R2(actconn[np.logical_and(actconn>split_distr_th,~excl_unc31)],intensity_map_unc31[np.logical_and(actconn>split_distr_th,~excl_unc31)])
 R2_fconn_actconn_fit_unc31 = pp.R2(actconn_fit_unc31[~excl_unc31],intensity_map_unc31[~excl_unc31])
 
@@ -102,9 +124,11 @@ R2_fconn_actconn_fit_unc31_fast = pp.R2(actconn_fit_unc31[~excl_fastslow_unc31],
 
 print("### unc31")
 print("r_fconn_actconn_unc31",r_fconn_actconn_unc31)
+print("r_fconn_actconn_ph_unc31",r_fconn_actconn_ph_unc31)
 print("r_fconn_actconn_split_distr_unc31",r_fconn_actconn_split_distr_unc31)
 print("r_fconn_actconn_fit_unc31",r_fconn_actconn_fit_unc31)
 print("R2_fconn_actconn_unc31",R2_fconn_actconn_unc31)
+print("R2_fconn_actconn_ph_unc31",R2_fconn_actconn_ph_unc31)
 print("R2_fconn_actconn_split_distr_unc31",R2_fconn_actconn_split_distr_unc31)
 print("R2_fconn_actconn_fit_unc31",R2_fconn_actconn_fit_unc31)
 print("R2_fconn_actconn_unc31_fast",R2_fconn_actconn_unc31_fast)
@@ -207,35 +231,43 @@ for oi in np.arange(len(occ3_ths)):
 #########################################
 # WT
 r_q_actconn_wt = np.corrcoef(actconn[~excl_wt],1.-q_wt[~excl_wt])[0,1]
+r_q_actconn_ph_wt = np.corrcoef(actconn_ph[~excl_wt_ph],1.-q_wt_ph[~excl_wt_ph])[0,1]
 r_q_actconn_split_distr_wt = np.corrcoef(actconn[np.logical_and(actconn>split_distr_th,~excl_wt)],1.-q_wt[np.logical_and(actconn>split_distr_th,~excl_wt)])[0,1]
 r_q_actconn_fit_wt = np.corrcoef(actconn_fit_wt[~excl_wt],1.-q_wt[~excl_wt])[0,1]
 # Fit with intercept 0
 R2_q_actconn_wt = pp.R2(actconn[~excl_wt],1.-q_wt[~excl_wt])
+R2_q_actconn_ph_wt = pp.R2(actconn_ph[~excl_wt_ph],1.-q_wt_ph[~excl_wt_ph])
 R2_q_actconn_split_distr_wt = pp.R2(actconn[np.logical_and(actconn>split_distr_th,~excl_wt)],1.-q_wt[np.logical_and(actconn>split_distr_th,~excl_wt)])
 R2_q_actconn_fit_wt = pp.R2(actconn_fit_wt[~excl_wt],1.-q_wt[~excl_wt])
 
 print("### wt")
 print("r_q_actconn_wt",r_q_actconn_wt)
+print("r_q_actconn_ph_wt",r_q_actconn_ph_wt)
 print("r_q_actconn_split_distr_wt",r_q_actconn_split_distr_wt)
 print("r_q_actconn_fit_wt",r_q_actconn_fit_wt)
 print("R2_q_actconn_wt",R2_q_actconn_wt)
+print("R2_q_actconn_ph_wt",R2_q_actconn_ph_wt)
 print("R2_q_actconn_split_distr_wt",R2_q_actconn_split_distr_wt)
 print("R2_q_actconn_fit_wt",R2_q_actconn_fit_wt)
 
 # unc31
 r_q_actconn_unc31 = np.corrcoef(actconn[~excl_unc31],1.-q_unc31[~excl_unc31])[0,1]
+r_q_actconn_ph_unc31 = np.corrcoef(actconn_ph[~excl_unc31_ph],1.-q_unc31_ph[~excl_unc31_ph])[0,1]
 r_q_actconn_split_distr_unc31 = np.corrcoef(actconn[np.logical_and(actconn>split_distr_th,~excl_unc31)],1.-q_unc31[np.logical_and(actconn>split_distr_th,~excl_unc31)])[0,1]
 r_q_actconn_fit_unc31 = np.corrcoef(actconn_fit_unc31[~excl_unc31],1.-q_unc31[~excl_unc31])[0,1]
 # Fit with intercept 0
 R2_q_actconn_unc31 = pp.R2(actconn[~excl_unc31],1.-q_unc31[~excl_unc31])
+R2_q_actconn_ph_unc31 = pp.R2(actconn_ph[~excl_unc31_ph],1.-q_unc31_ph[~excl_unc31_ph])
 R2_q_actconn_split_distr_unc31 = pp.R2(actconn[np.logical_and(actconn>split_distr_th,~excl_unc31)],1.-q_unc31[np.logical_and(actconn>split_distr_th,~excl_unc31)])
 R2_q_actconn_fit_unc31 = pp.R2(actconn_fit_unc31[~excl_unc31],1.-q_unc31[~excl_unc31])
 
 print("### unc31")
 print("r_q_actconn_unc31",r_q_actconn_unc31)
+print("r_q_actconn_ph_unc31",r_q_actconn_ph_unc31)
 print("r_q_actconn_split_distr_unc31",r_q_actconn_split_distr_unc31)
 print("r_q_actconn_fit_unc31",r_q_actconn_fit_unc31)
 print("R2_q_actconn_unc31",R2_q_actconn_unc31)
+print("R2_q_actconn_ph_unc31",R2_q_actconn_ph_unc31)
 print("R2_q_actconn_split_distr_unc31",R2_q_actconn_split_distr_unc31)
 print("R2_q_actconn_fit_unc31",R2_q_actconn_fit_unc31)
 
@@ -256,27 +288,55 @@ ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
 x1,y1 = actconn[in_wt],intensity_map_wt[in_wt]
 x2,y2 = actconn[not_in_wt],intensity_map_wt[not_in_wt]
 binsx = np.logspace(-11,np.log10(np.max(x1)),30)
-binw=0.02;y1y2max=max(np.max(np.abs(y1)),np.max(np.abs(y2)));lim=(int(y1y2max/binw)+1)*binw
+binw=0.005;y1y2max=max(np.nanmax(np.abs(y1)),np.nanmax(np.abs(y2)));lim=(int(y1y2max/binw)+1)*binw
 binsy = np.arange(-lim, lim + binw, binw)
-pp.scatter_hist(x1, y1, ax, ax_histx, ax_histy, label="functionally connected",binsx=binsx,binsy=binsy,alpha_scatter=0.5,alpha_hist=0.5,color=c_in_wt)
-pp.scatter_hist(x2, y2, ax, ax_histx, ax_histy, label="functionally not connected",binsx=binsx,binsy=binsy,alpha_scatter=0.5,alpha_hist=0.5,color=c_not_in_wt)
+pp.scatter_hist(x2, y2, ax, ax_histx, ax_histy, label=r"functionally not connected ($q_{eq}<0.05$)",binsx=binsx,binsy=binsy,alpha_scatter=0.2,alpha_hist=0.5,color=c_not_in_wt,hist_density=True)
+pp.scatter_hist(x1, y1, ax, ax_histx, ax_histy, label=r"functionally connected ($q<0.05$)",binsx=binsx,binsy=binsy,alpha_scatter=0.2,alpha_hist=0.5,color=c_in_wt,hist_density=True)
 
 y3 = intensity_map_wt[np.logical_and(in_wt,actconn>split_distr_th)]
 y4 = intensity_map_wt[np.logical_and(in_wt,actconn<=split_distr_th)]
-ax_histy.hist(y3,bins=binsy,orientation='horizontal',alpha=0.5,histtype="step",color=cy3)
-ax_histy.hist(y4,bins=binsy,orientation='horizontal',alpha=0.5,histtype="step",color=cy4)
-ax_histy.plot((0,70,70,0),(1,1,-0.5,-0.5),c="k",alpha=0.5)
-ax_histy.text(90,1,"panel c",color="k",alpha=0.5)
+ax_histy.hist(y3,bins=binsy,orientation='horizontal',alpha=0.5,histtype="step",color=cy3,density=True)
+ax_histy.hist(y4,bins=binsy,orientation='horizontal',alpha=0.5,histtype="step",color=cy4,density=True)
+#ax_histy.plot((0,70,70,0),(1,1,-0.5,-0.5),c="k",alpha=0.5)
+#ax_histy.text(90,1,"panel c",color="k",alpha=0.5)
 
 ax.axvline(split_distr_th,color="k",alpha=0.3)
 ax.set_xscale("log")
 ax_histx.set_xscale("log")
+ax_histx.set_yscale("log")
+ax_histx.set_ylim(1,None)
 ax.set_xlabel("Anatomy-derived response $\\Delta V$ (V)\nbiophysical model")
 ax.set_ylabel(r"$\Delta F/F$")
 ax.legend()
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt_A.txt",np.array([x1,y1]).T,delimiter=",")
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt_B.txt",np.array([x2,y2]).T,delimiter=",")
+
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt.txt","w")
+f.write("x q<0.05,y q<0.05,x q_eq<0.05,y q_eq<0.05\n")
+n1 = len(x1)
+n2 = len(x2)
+s = ""
+for i in np.arange(max(n1,n2)):
+    if i<n1:
+        s += str(x1[i])+","+str(y1[i])+","
+    else:
+        s += ",,"
+    if i<n2:
+        s += str(x2[i])+","+str(y2[i])+","
+    else:
+        s += ",,"
+    s += "\n"
+s = s[:-1]
+f.write(s)
+f.close()
+    
+
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt.pdf",dpi=300,bbox_inches="tight")
 
 # Zoomed-in inset for the right marginal distribution
+
+# OLD VERTICAL PANEL
+'''
 fig = plt.figure(21,figsize=(2,4))
 ax = fig.add_subplot(111)
 ax.hist(y1, bins=binsy, orientation='horizontal',alpha=0.5,label="functionally conn.",color=c_in_wt)
@@ -290,13 +350,31 @@ ax.set_yticklabels(["-0.5","0","0.5","1.0"])
 ax.set_ylabel(r"$\Delta F/F$")
 ax.set_xlabel("number of pairs")
 ax.legend(bbox_to_anchor=(1,1), loc="upper left")
-ax.text(80,0.1,"**** Functionally $and$ anatomically connected\npairs have $\\Delta F/F$ larger than functionally\nconnected but anatomically $not$ connected pairs.\n(p<10$^{-36}$ one-sided KS test)",fontsize=10)
+ax.text(80,0.1,"**** Functionally $and$ anatomically connected\npairs have $\\Delta F/F$ larger than functionally\nconnected but anatomically $not$ connected pairs.\n(p<10$^{-36}$ one-sided KS test)",fontsize=10)'''
+fig = plt.figure(21,figsize=(4,2))
+ax = fig.add_subplot(111)
+ax.hist(y1, bins=binsy, orientation='vertical',alpha=0.5,label="functionally conn.",color=c_in_wt,density=True)
+ax.hist(y2, bins=binsy, orientation='vertical',alpha=0.5,label="functionally not conn.",color=c_not_in_wt,density=True)
+#ax.hist(y3,bins=binsy,orientation='vertical',alpha=0.5,histtype="step",lw=2,label="functionally and anatomically conn.",color=cy3,density=True)
+#ax.hist(y4,bins=binsy,orientation='vertical',alpha=0.5,histtype="step",lw=2,label="functionally conn. but anatomically not conn.",color=cy4,density=True)
+ax.set_xlim(-0.5,1.0)
+#ax.set_ylim(0,70)
+ax.set_xticks([-0.5,0.,0.5,1.0])
+ax.set_xticklabels(["-0.5","0","0.5","1.0"])
+ax.set_xlabel(r"$\Delta F/F$")
+ax.set_ylabel("density of pairs")
+ax.legend(bbox_to_anchor=(1,1), loc="upper left")
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt_inset.pdf",dpi=300,bbox_inches="tight")
 
 # Violin
-y3b = intensity_map_wt[np.logical_and(~np.isnan(q_wt),actconn>split_distr_th)]
-y4b = intensity_map_wt[np.logical_and(~np.isnan(q_wt),actconn<=split_distr_th)]
+y3b = intensity_map_wt[np.logical_and(~np.isnan(intensity_map_wt),actconn>split_distr_th)]
+y4b = intensity_map_wt[np.logical_and(~np.isnan(intensity_map_wt),actconn<=split_distr_th)]
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt_violin_A.txt",y4b)
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_wt_violin_B.txt",y3b)
 _,p_all = kstest(y3b,y4b,alternative="less")
+print("Violin plot KS test",p_all)
+print("n actconn<th",y4b.shape)
+print("n actconn>th",y3b.shape)
 fig = plt.figure(22,figsize=(4,8))
 ax = fig.add_subplot(111)
 ax.violinplot([y4b,y3b],points=1000)
@@ -381,16 +459,20 @@ fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_
 fig = plt.figure(5)
 ax = fig.add_subplot(111)
 bars = [R2_fconn_actconn_wt,
+        #R2_fconn_actconn_ph_wt,
         R2_fconn_actconn_fit_wt,
         R2_fconn_actconn_unc31,
+        #R2_fconn_actconn_ph_unc31,
         R2_fconn_actconn_fit_unc31,
         ]
 x = np.arange(len(bars))/2
 ax.bar(x,bars,width=0.4,align="center")
 ax.set_xticks(x)
 ax.set_xticklabels(["Head\nWT",
+                    #"Pharynx\nWT",
                     "Head\nWT (fit)",
                     "Head\nunc-31",
+                    #"Pharynx\nunc-31",
                     "Head\nunc-31 (fit)",                    
                     ])
 ax.set_ylabel(r"$R^2$")
@@ -445,6 +527,7 @@ ax.spines.right.set_visible(False)
 ax.spines.top.set_visible(False)
 ax.legend(fontsize=20)
 fig.tight_layout()
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_lineplot_R2.txt",np.array([x1,y1,x2,y2]))
 fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig3/funatlas_vs_anatomy_lineplot_R2.pdf",dpi=300,bbox_inches="tight")
 
 #############################################

@@ -16,6 +16,8 @@ funa = pp.Funatlas()
 funa.load_aconnectome_from_file(chem_th=0,gap_th=0)
 aconn = funa.aconn_chem + funa.aconn_gap
 aconn = funa.reduce_to_head(aconn)
+gap = funa.reduce_to_head(funa.aconn_gap)
+chem = funa.reduce_to_head(funa.aconn_chem)
 bilateral_companions = funa.get_bilateral_companions() 
 
 actconn = np.loadtxt("/projects/LEIFER/francesco/simulations/activity_connectome_sign2/activity_connectome_no_merge.txt")
@@ -32,6 +34,7 @@ intensity_map_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_i
 q_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_q_unc31.txt")
 tost_q_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_tost_q_unc31.txt")
 occ3_wt = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_occ3.txt")
+occ3_unc31 = np.loadtxt("/projects/LEIFER/francesco/funatlas/funatlas_intensity_map_cache_occ3_unc31.txt")
 
 avg_rise_times = np.loadtxt("/projects/LEIFER/francesco/funatlas/avg_rise_times.txt")
 avg_rise_times = funa.reduce_to_head(avg_rise_times)
@@ -50,6 +53,7 @@ in_unc31 = q_unc31<0.05
 intensity_map_wt = funa.reduce_to_head(intensity_map_wt)
 intensity_map_unc31 = funa.reduce_to_head(intensity_map_unc31)
 occ3_wt = funa.reduce_to_head(occ3_wt)
+occ3_unc31 = funa.reduce_to_head(occ3_unc31)
 actconn = funa.reduce_to_head(actconn)
 
 ##############################################################
@@ -65,6 +69,7 @@ not_in_unc31 = np.logical_and(tost_q_unc31<tost_q_unc31_th,q_unc31>0.05)
 esyn_strict = np.logical_and(in_wt, not_in_unc31)
 esyn_strict[np.isnan(q_wt)] = False
 esyn_strict[np.isnan(q_unc31)] = False
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/candidate_purely_extrasynaptic_connections_strict.txt",esyn_strict)
 esyn_strict = funa.reduce_to_head(esyn_strict)
 
 
@@ -94,6 +99,8 @@ for ith in np.arange(len(tost_q_th)):
 # USE THE OPTIMAL TOST Q THRESHOLD FOR NOT IN UNC-31
 ##############################################################
 tost_q_unc31_th = tost_q_th[np.argmin(p_actconn_actconn_esyn_)]
+print("BYPASSING OPTIMAL TOSTQ AND USING THE STRICT ONE")
+tost_q_unc31_th = 0.05
 not_in_unc31 = np.logical_and(tost_q_unc31<tost_q_unc31_th,q_unc31>0.05)
 
 esyn = np.logical_and(in_wt, not_in_unc31)
@@ -116,7 +123,10 @@ new_in_unc31 = funa.reduce_to_head(new_in_unc31)
 #don't show diagonal/autoresponses
 #np.fill_diagonal(new_in_unc31,False)
 new_in_unc31_in_aconn = np.logical_and(new_in_unc31,aconn!=0)
-new_in_unc31_in_aconn = np.logical_and(new_in_unc31,aconn!=0)
+
+#both in wt and unc31
+wt_and_unc31 = np.logical_and(in_wt,in_unc31)
+wt_and_unc31 = funa.reduce_to_head(wt_and_unc31)
 
 ###########################################################################
 # BUILD DISTRIBUTION OF ACTCONN FOR BILATERAL COMPANIONS, AND COMPARE IT TO 
@@ -163,16 +173,18 @@ print("Fraction of new in unc31 in the 1-hop connectome",np.sum(new_in_unc31_in_
 
 print("List of high-confidence candidate extrasynaptic pairs (only showing excitatory)")
 f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/esyn_heatraster.sh","w")
-heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/"
+heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/heat_raster/ --nan-th:0.05"
 where_esyn = np.where(esyn)
 occ3_esyn = []
 dff_esyn = []
+dff_esyn_unc31 = []
 ids_esyn = []
 for k in np.arange(len(where_esyn[0])):
     i = where_esyn[0][k]
     j = where_esyn[1][k]
     occ3_esyn.append(occ3_wt[i,j])
     dff_esyn.append(intensity_map_wt[i,j])
+    dff_esyn_unc31.append(intensity_map_unc31[i,j])
     ids_esyn.append(funa.head_ids[j]+">"+funa.head_ids[i])
     if i == j: continue
     print(funa.head_ids[j]+"->"+funa.head_ids[i])#+"\timap: "+str(np.around(intensity_map_wt[i,j],1)))
@@ -180,15 +192,27 @@ for k in np.arange(len(where_esyn[0])):
     f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+" --unc31\n")
 f.close()
     
-print("List of STRICT high-confidence candidate extrasynaptic pairs (only showing excitatory)")
+print("\nList of STRICT high-confidence candidate extrasynaptic pairs (only showing excitatory)")
 where_esyn_strict = np.where(esyn_strict)
+tost_q_unc31_of_esyn = []
+tost_q_unc31_head = funa.reduce_to_head(tost_q_unc31)
 for k in np.arange(len(where_esyn_strict[0])):
     i = where_esyn_strict[0][k]
     j = where_esyn_strict[1][k]
     if i == j: continue
+    tost_q_unc31_of_esyn.append(tost_q_unc31_head[i,j])
     print(funa.head_ids[j]+"->"+funa.head_ids[i])
     
-print("List of high-confidence candidate autocrine neurons (only showing excitatory)")
+print("\nList of STRICT high-confidence candidate extrasynaptic pairs (only showing excitatory) #####ORDERED#######")
+sorter = np.argsort(tost_q_unc31_of_esyn)
+for m in np.arange(len(sorter)):
+    k = sorter[m]
+    i = where_esyn_strict[0][k]
+    j = where_esyn_strict[1][k]
+    if i == j: continue
+    print(m, np.around(tost_q_unc31_of_esyn[k],3), np.around(actconn[i,j],4), funa.head_ids[j]+"->"+funa.head_ids[i])
+    
+print("\nList of high-confidence candidate autocrine neurons (only showing excitatory)")
 where_esyn = np.where(esyn)
 autocrine = []
 autocrine_ids = []
@@ -203,6 +227,72 @@ for k in np.arange(len(where_esyn[0])):
     print(funa.head_ids[j]+"->"+funa.head_ids[i])
 
 autocrine = np.array(autocrine)
+
+
+print("\nList of new_in_unc31 pairs (only showing excitatory)")
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/new_in_unc31_heatraster.sh","w")
+heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/heat_raster_new_in_unc31/"
+where_new_in_unc31 = np.where(new_in_unc31)
+occ3_new_in_unc31 = []
+dff_new_in_unc31 = []
+ids_new_in_unc31 = []
+for k in np.arange(len(where_new_in_unc31[0])):
+    i = where_new_in_unc31[0][k]
+    j = where_new_in_unc31[1][k]
+    occ3_new_in_unc31.append(occ3_unc31[i,j])
+    dff_new_in_unc31.append(intensity_map_wt[i,j])
+    ids_new_in_unc31.append(funa.head_ids[j]+">"+funa.head_ids[i])
+    if i == j: continue
+    print(funa.head_ids[j]+"->"+funa.head_ids[i])#+"\timap: "+str(np.around(intensity_map_wt[i,j],1)))
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+"\n")
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+" --unc31\n")
+f.close()
+
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/wt_and_unc31_heatraster.sh","w")
+heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/heat_raster_wt_and_unc31/"
+where_wt_and_unc31 = np.where(wt_and_unc31)
+occ3_wt_and_unc31 = []
+dff_wt_and_unc31 = []
+ids_wt_and_unc31 = []
+for k in np.arange(len(where_wt_and_unc31[0])):
+    i = where_wt_and_unc31[0][k]
+    j = where_wt_and_unc31[1][k]
+    if i == j: continue
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+"\n")
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+" --unc31\n")
+f.close()
+
+print("\nList of wt_and_unc31 pairs with direct gap junction")
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/wt_and_unc31_gap_heatraster.sh","w")
+heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/heat_raster_wt_and_unc31_gap/"
+where_wt_and_unc31_gap = np.where(np.logical_and(wt_and_unc31,gap))
+occ3_wt_and_unc31_gap = []
+dff_wt_and_unc31_gap = []
+ids_wt_and_unc31_gap = []
+for k in np.arange(len(where_wt_and_unc31_gap[0])):
+    i = where_wt_and_unc31_gap[0][k]
+    j = where_wt_and_unc31_gap[1][k]
+    if i == j: continue
+    print(funa.head_ids[j]+"->"+funa.head_ids[i])
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+"\n")
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+" --unc31\n")
+f.close()
+
+print("\nList of wt_and_unc31 pairs with direct chem junction")
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/wt_and_unc31_chem_heatraster.sh","w")
+heatraster = "python /home/frandi/dev/pump-probe-analysis/scripts/Andy/heat_raster_plot.py --inclall-occ --sort-avg --relative --vmax:1.2 --headless --nomerge --paired --req_auto_response --matchless-nan-th:0.5 --matchless-nan-th-added-only --dst:/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/heat_raster_wt_and_unc31_chem/"
+where_wt_and_unc31_chem = np.where(np.logical_and(wt_and_unc31,chem))
+occ3_wt_and_unc31_chem = []
+dff_wt_and_unc31_chem = []
+ids_wt_and_unc31_chem = []
+for k in np.arange(len(where_wt_and_unc31_chem[0])):
+    i = where_wt_and_unc31_chem[0][k]
+    j = where_wt_and_unc31_chem[1][k]
+    if i == j: continue
+    print(funa.head_ids[j]+"->"+funa.head_ids[i])
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+"\n")
+    f.write(heatraster+" -j:"+funa.head_ids[j]+" -i:"+funa.head_ids[i]+" --unc31\n")
+f.close()
 
 print("Fraction of the esyn pairs that go into or out from the pharynx.")
 print(in_out_pharynx)
@@ -338,7 +428,76 @@ axb.set_ylabel("CDF")
 ax.legend(bbox_to_anchor=(1.2,1), loc="upper left").get_frame().set_alpha(0.3)
 #ax.text(200,9,"* Candidate extrasynaptic\npairs have anatomy-derived\nresponses smaller than\nall connected pairs\n(p<0.05 one-sided KS test)",fontsize=10,verticalalignment="top")
 #fig.tight_layout()
-fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/estimated_extrasynaptic_hist.pdf",bbox_inches="tight")
+fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig5/estimated_extrasynaptic_hist.pdf",bbox_inches="tight")
+
+#########################
+# actconn of new_in_unc31
+#########################
+
+dist1 = actconn[np.logical_and(funa.reduce_to_head(in_unc31),~ondiag)]
+dist2 = actconn[np.logical_and(new_in_unc31,~ondiag)]
+_, p_actconn_actconn_new_in_unc31_less = kstest(dist1,dist2,alternative="less")
+print("KS p of CDF[in wt actconn] being less than CDF[actconn[new_in_unc31]]",p_actconn_actconn_new_in_unc31_less)
+_, p_actconn_actconn_new_in_unc31 = kstest(dist1,dist2,alternative="greater")
+print("KS p of CDF[in wt actconn] being greater than CDF[actconn[new_in_unc31]]",p_actconn_actconn_new_in_unc31)
+_, p_actconn_actconn_new_in_unc31 = kstest(dist1,dist2,alternative="two-sided")
+print("KS p of CDF[in wt actconn] being two-sided than CDF[actconn[new_in_unc31]]",p_actconn_actconn_new_in_unc31)
+
+stars = pp.p_to_stars(p_actconn_actconn_new_in_unc31_less)
+
+fig = plt.figure(131,figsize=(4,3))
+ax = fig.add_subplot(111)
+axb = ax.twinx()
+nbins = np.logspace(-5,np.log10(np.max(dist1)),30)
+n1,bins,_=ax.hist(dist1,density=density,bins=nbins,alpha=0.5,label="all unc31",color=c_in_wt)
+n2,_,_ = ax.hist(dist2,density=density,bins=bins,alpha=0.5,color=c_esyn,label="new_in_unc31")
+axb.step(bins[1:],np.cumsum(n1)/dist1.shape[0],ls="-",color=c_in_wt)
+axb.step(bins[1:],np.cumsum(n2)/dist2.shape[0],ls="-",color=c_esyn)
+ax.axvline(split_distr_th,c="k",label="Th. from Fig. 3b")
+#ax.set_xticks([1e-4,1e-2,1e0])
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("Anatomy-derived response (V)\nbiophysical model")
+ax.set_ylabel("number")
+axb.set_ylabel("CDF")
+ax.legend(bbox_to_anchor=(1.2,1), loc="upper left").get_frame().set_alpha(0.3)
+#fig.tight_layout()
+
+#########################
+# actconn of wt_and_unc31
+#########################
+
+dist1 = actconn[np.logical_and(funa.reduce_to_head(in_wt),~ondiag)]
+dist2 = actconn[np.logical_and(wt_and_unc31,~ondiag)]
+_, p_actconn_actconn_wt_and_unc31_less = kstest(dist1,dist2,alternative="less")
+print("KS p of CDF[in wt actconn] being less than CDF[actconn[wt_and_unc31]]",p_actconn_actconn_wt_and_unc31_less)
+_, p_actconn_actconn_wt_and_unc31 = kstest(dist1,dist2,alternative="greater")
+print("KS p of CDF[in wt actconn] being greater than CDF[actconn[wt_and_unc31]]",p_actconn_actconn_wt_and_unc31)
+_, p_actconn_actconn_wt_and_unc31 = kstest(dist1,dist2,alternative="two-sided")
+print("KS p of CDF[in wt actconn] being two-sided than CDF[actconn[wt_and_unc31]]",p_actconn_actconn_wt_and_unc31)
+
+stars = pp.p_to_stars(p_actconn_actconn_wt_and_unc31_less)
+
+fig = plt.figure(132,figsize=(4,3))
+ax = fig.add_subplot(111)
+axb = ax.twinx()
+nbins = np.logspace(-5,np.log10(np.max(dist1)),30)
+n1,bins,_=ax.hist(dist1,density=density,bins=nbins,alpha=0.5,label="all WT",color=c_in_wt)
+n2,_,_ = ax.hist(dist2,density=density,bins=bins,alpha=0.5,color=c_esyn,label="conn. in WT and unc-31")
+axb.step(bins[1:],np.cumsum(n1)/dist1.shape[0],ls="-",color=c_in_wt)
+axb.step(bins[1:],np.cumsum(n2)/dist2.shape[0],ls="-",color=c_esyn)
+ax.axvline(split_distr_th,c="k",label="Th. from Fig. 3b")
+#ax.set_xticks([1e-4,1e-2,1e0])
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("Anatomy-derived response (V)\nbiophysical model")
+ax.set_ylabel("number")
+axb.set_ylabel("CDF")
+ax.legend(bbox_to_anchor=(1.2,1), loc="upper left").get_frame().set_alpha(0.3)
+ax.set_title("Anatomy-predicted responses of\nall WT pairs and\npairs with q<0.05 in WT and unc-31")
+#fig.tight_layout()
+fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS13/wt_and_unc31.pdf",bbox_inches="tight")
+
 
 ##################
 # actconn in unc31
@@ -406,7 +565,7 @@ fig.tight_layout()
 # TIMESCALES
 ############
 density = False
-nbins = 30
+nbins = 100
 dist1 = avg_rise_times[np.logical_and(funa.reduce_to_head(in_wt),~ondiag)]
 dist2 = avg_rise_times[np.logical_and(esyn,~ondiag)]
 _, p_avg_rise_times_esyn = kstest(dist1,dist2,alternative="less")
@@ -414,11 +573,31 @@ print("KS p of CDF[avg_rise_times[in_wt]] being less than CDF[avg_rise_times[esy
 fig = plt.figure(17)
 ax = fig.add_subplot(111)
 _,bins,_=ax.hist(dist1,density=density,bins=nbins,alpha=0.5,label="all")
-ax.hist(dist2,density=density,bins=bins,alpha=0.5,label="est. extrasynaptic")
+ax.hist(dist2,density=density,bins=bins,alpha=0.5,label="candidate purely extrasynaptic")
 ax.set_yscale("log")
-ax.set_xlabel("avg_rise_times")
-ax.set_ylabel("number")
-ax.legend()
+ax.set_xlabel("Average kernel rise-time (s)")
+ax.set_ylabel("Number of connections")
+ax.legend(fontsize=16)
+
+n1 = len(dist1)
+n2 = len(dist2)
+
+assert n1>n2
+f = open("/projects/LEIFER/francesco/funatlas/figures/paper/fig5/estimated_extrasynaptic_timescales.txt","w")
+f.write("all,candidate purely extrasynaptic\n")
+s = ""
+for i_ in np.arange(max(n1,n2)):
+    s += str(dist1[i_])+","
+    if i_<n2:
+        s += str(dist2[i_])
+    s += "\n"
+s = s[:-1]
+f.write(s)
+f.close()
+
+#np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig5/estimated_extrasynaptic_timescales_A.txt",dist1)
+#np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig5/estimated_extrasynaptic_timescales_B.txt",dist2)
+fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig5/estimated_extrasynaptic_timescales.pdf",bbox_inches="tight")
 fig.tight_layout()
 
 ##########################
@@ -435,16 +614,36 @@ fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/estimat
 
 fig = plt.figure(19)
 ax = fig.add_subplot(111)
-ax.plot(occ3_esyn,dff_esyn,'o',c="C0",alpha=0.2)
+ax.plot(occ3_esyn,np.array(dff_esyn)-np.array(dff_esyn_unc31),'o',c="C0",alpha=0.2)
+x_save = []
+y_save = []
 for i in np.arange(len(ids_esyn)):
     pair = ids_esyn[i]
     x = occ3_esyn[i]
-    y = dff_esyn[i]
+    y = dff_esyn[i]-dff_esyn_unc31[i]
+    ax.text(x,y,pair,fontsize=3)
+    x_save.append(x)
+    y_save.append(y)
+ax.set_xlabel("Number of observations")
+ax.set_ylabel(r"$\Delta\langle\Delta F/F\rangle$")
+fig.tight_layout()
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/estimated_extrasynaptic_screen2.txt",np.array([x_save,y_save]))
+fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/estimated_extrasynaptic_screen2.pdf",bbox_inches="tight")
+
+fig = plt.figure(20)
+ax = fig.add_subplot(111)
+ax.plot(occ3_new_in_unc31,dff_new_in_unc31,'o',c="C0",alpha=0.2)
+for i in np.arange(len(ids_new_in_unc31)):
+    pair = ids_new_in_unc31[i]
+    x = occ3_new_in_unc31[i]
+    y = dff_new_in_unc31[i]
     ax.text(x,y,pair,fontsize=3)
 ax.set_xlabel("Number of observations")
 ax.set_ylabel(r"$\langle\Delta F/F\rangle$")
+ax.set_title("New in unc-31")
 fig.tight_layout()
-fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/estimated_extrasynaptic_screen2.pdf",bbox_inches="tight")
+fig.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/figS_esyn/new_in_unc31_screen2.pdf",bbox_inches="tight")
+
 
 
 plt.show()

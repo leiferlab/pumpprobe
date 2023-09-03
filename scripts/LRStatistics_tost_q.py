@@ -16,7 +16,7 @@ matchless_nan_th = None
 matchless_nan_th_from_file = "--matchless-nan-th-from-file" in sys.argv
 matchless_nan_th_added_only = "--matchless-nan-th-added-only" in sys.argv
 correct_decaying = "--correct-decaying"
-nan_th = 0.3
+nan_th = 0.05
 save = "--no-save" not in sys.argv
 two_min_occ = "--two-min-occ" in sys.argv
 
@@ -27,6 +27,7 @@ req_auto_response = "--req-auto-response" in sys.argv
 for s in sys.argv:
     sa = s.split(":")
     if sa[0] == "--matchless-nan-th": matchless_nan_th = float(sa[1])
+    if sa[0] == "--nan-th": nan_th = float(sa[1])
 
 # Prepare kwargs for signal preprocessing (to be passed to Funatlas, so that
 # it can internally apply the preprocessing to the Signal objects).
@@ -217,6 +218,7 @@ plt.xticks(ypos, probs, rotation=0, fontsize = 25)
 plt.yticks(np.arange(0, 0.5, step=0.2), fontsize= 20)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics_tost.txt", np.array([ypos, Probs_numbers]))
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics_tost.pdf", bbox_inches='tight')
 #plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/LR_statistics_justtwo_tost.pdf", bbox_inches='tight')
 # after this point I am remaking the mappa of average DF to find out how many of our significant
@@ -250,7 +252,8 @@ for ai in np.arange(funa.n_neurons):
                                          normalize="none")[:, i]
             nan_mask = funa.sig[ds].get_segment_nan_mask(i0, i1)[:, i]
 
-            if np.sum(nan_mask) > nan_th * len(y): continue
+            #if np.sum(nan_mask) > nan_th * len(y): continue
+            if not pp.Fconn.nan_ok(nan_mask,nan_th * len(y)): continue
 
             if signal_range is None:
                 pre = np.average(y[:shift_vol])
@@ -365,7 +368,8 @@ plt.yticks(np.arange(0, 0.35, step=0.15), fontsize= 20)
 plt.xticks(np.arange(0, 0.11, step=0.05), fontsize= 20)
 #plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/LR_statistics_tost.pdf")
 #plt.savefig("/projects/LEIFER/Sophie/Figures/Response_Statistics/Inhibitory_Fraction_lessthan_tost.pdf", bbox_inches='tight')
-#plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/Inhibitory_Fraction_lessthan_tost.pdf", bbox_inches='tight')
+np.savetxt("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/Inhibitory_Fraction_lessthan_tost.txt", np.array([q_sorted[np.where(q_sorted<0.1)], fraction[np.where(q_sorted<0.1)]]))
+plt.savefig("/projects/LEIFER/francesco/funatlas/figures/paper/fig2/Inhibitory_Fraction_lessthan_tost.pdf", bbox_inches='tight')
 
 plt.show()
 
